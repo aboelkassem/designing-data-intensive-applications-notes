@@ -32,13 +32,13 @@ This two functions: Append only writes and For lookups read O(n)
 
 Whenever you append a new key-value pair to the file, you also update the hash map to reflect the offset of the data you just wrote
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e6d18ac3-bd51-485b-a98c-eec966603ceb/Untitled.png)
+![](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/log-structured-storage.png?raw=true)
 
 Append only Data structure. The log file is sequentially written, which allows for fast write operations since it avoids random disk seeks.
 
 What if the disk is full or out of space? we will group the logs into segments with size
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/364d41b5-0d52-4963-8f70-8c111c7adb23/Untitled.png)
+![](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/hash-index-compaction.png?raw=true)
 
 New records are appended to a *segment* of certain size which is being merged and compacted by a background thread. 
 
