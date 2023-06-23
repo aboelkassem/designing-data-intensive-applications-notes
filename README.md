@@ -11,6 +11,23 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 
 # Part I: Foundation of Data Systems
 ## Chapter 3: Storage and Retrieval
+## Data Structures That Power Your Database
+
+Imagine having the world's simplest database at your disposal, implemented using just two Bash functions. This minimalist yet functional database allows you to store and retrieve key-value pairs effortlessly. Here's the code snippet that brings this database to life:
+
+```bash
+#!/bin/bash
+db_set () {
+    echo "$1,$2" >> database
+}
+db_get () {
+    grep "^$1," database | sed -e "s/^$1,//" | tail -n 1
+}
+```
+
+This two functions: Append only writes and For lookups read O(n)
+
+**An index** is an additional structure that is derived from the primary data (metadata)
 
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
