@@ -9,6 +9,8 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 
 # Table Of Content
 
+# Part I: Foundation of Data Systems
+## Chapter 3: Storage and Retrieval
 
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
