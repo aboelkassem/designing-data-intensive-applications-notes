@@ -1,5 +1,5 @@
 # Designing Data Intensive Applications Notes
-This repository serves as a collection of my own comprehensive notes, summaries, and study materials for studying and understanding the concepts covered in the book.
+This repository serves as a collection of my own notes and summaries for studying and understanding the concepts covered in the book.
 
 ## About the Book
 "Designing Data-Intensive Applications" by Martin Kleppmann is a highly regarded resource for developers, engineers, and architects working with data-intensive systems. The book explores the principles, patterns, and best practices for designing and building robust, scalable, and reliable applications that process and store large volumes of data.
