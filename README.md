@@ -124,6 +124,9 @@ To Improve the previous way for performance,
 - Another optimization way is to use short key names (B-Tree+)
 - Another optimization way is to use Extra pointers for each node to point previous and next nodes
 
+## B-Tree vs SSTable
+![Untitled](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/SSTable%20vs%20BTree.png)
+
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
 
