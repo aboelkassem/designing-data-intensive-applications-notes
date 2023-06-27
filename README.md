@@ -198,6 +198,19 @@ Products such as **VoltDB**, **MemSQL**, and **Oracle TimesTen** (Not free) are 
 
 Redis and Couchbase (open source) provide weak durability by writing to disk asynchronously.
 
+## Online Transaction Processing (OLTP) vs Analytics Processing (OLAP)
+
+**Online Transaction Processing (ALTP)** is a pattern to ready some specific rows/data in the database (a transaction to DB)
+
+- A transaction needn’t necessarily have ACID (atomicity, consistency, isolation, and durability) properties. Transaction processing just means allowing clients to make **low-latency reads and writes** as opposed to **batch processing jobs (analytics OLAP)**, which only run periodically(for example, once per day).
+- Supported databases: MySQL, Oracle, PostgresSQL, Cassandra, SAP HANA, SQL Server
+
+**Online Analytics Processing (ALTP)** is used for data analysis which perform analytic query needs to scan over a huge number of records, only reading a few columns per record, and calculates aggregate statistics (such as count, sum, or average) rather than returning the raw data to the user.
+
+- Supported databases: Spark, Apache Hive, Teradata, RedShift, Cloudera, Impala, Presto, Drill, Cassandra SAP HANA, SQL Server
+
+At first, you can use the same database with these two patterns OLTP and OLAP like SQL Server, but  early 1990s, there was a trend for companies to stop using their OLTP systems for analytics purposes. This database called **Database warehouse.**
+
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
 
