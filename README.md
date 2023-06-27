@@ -211,6 +211,16 @@ Redis and Couchbase (open source) provide weak durability by writing to disk asy
 
 At first, you can use the same database with these two patterns OLTP and OLAP like SQL Server, but  early 1990s, there was a trend for companies to stop using their OLTP systems for analytics purposes. This database called **Database warehouse.**
 
+## Database Warehouse
+
+A separate Database to perform huge OLAP queries. 
+
+The data warehouse contains a read-only copy of the data in all the various OLTP systems in the company. 
+
+Data is extracted from OLTP databases (using either a periodic data dump or a continuous stream of updates), transformed into an analysis-friendly schema, cleaned up, and then loaded into the data warehouse. This process of getting data into the warehouse is known as ***Extract–Transform–Load (ETL).***
+
+![Untitled](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/data-warehouse-etl.png)
+
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
 
