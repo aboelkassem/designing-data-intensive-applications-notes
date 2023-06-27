@@ -91,8 +91,38 @@ combine segment files and to discard overwritten or deleted values
 ![](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/sstable-avl-tree.png)
 
 This algorithm (named also LSM Tree) used in LevelDB, RockDB, Cassandra, HBase and Lucene engine (used in Elastic Search and Solr) 
-
 LSM-Trees offer an efficient segment merging mechanism, eliminate the need for an in-memory index for all keys, and support grouping and compressing records before writing to disk, but they can be slow for non-existent key lookups (which can be improved with a bloom filter).
+
+## B-Tree
+This is the most widely used indexing in Relational Databases like Postgres. Like SSTables, B-trees keep key-value pairs sorted by key which allows efficient keyvalue lookups and range queries.
+
+Unlike SSTable (which break the database into segments), B-Tree break the database into fixed Size blocks (pages). Each page is have size (traditionally 4 KB in size)
+
+Unlike SSTable (which is stored on memory), B-Tree is in the disk
+
+B-Tree is balanced, so `n` keys always have depth of `O(log n)`. It also have a branching factor of several hundreds typically.
+
+![Untitled](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/B-Tree.png)
+
+If you want to update the value for an existing key in a B-tree, you search for the leaf page containing that key, change the value in that page, and write the page back to disk.
+
+If you want to add a new key, you need to find the page whose range encompasses the new key and add it to that page.
+
+- If there isn’t enough free space in the page to accommodate the new key, it is **split** into two half-full pages, and the parent page is updated to account for the new subdivision of key ranges
+
+![Untitled](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/B-Tree%20Insertion.png)
+
+> Most databases can fit into a B-tree that is **three or four levels** deep, so you don’t need to follow many page references to find the page you are looking for. (A four-level tree of 4 KB pages with a branching factor of 500 can store up to 256 TB.)
+
+### B-Tree Reliability
+In order to make the database resilient to crashes
+
+- B Tree uses **Write AHead Log (WAL)** ⇒ This is an append-only file to which every B-tree modification must be written before it can be applied to the pages of the tree itself.
+
+To Improve the previous way for performance, 
+- They use new way called **Copy On Write** scheme, Any new data written to a different location, and a new version of the parent pages in the tree is created, pointing at the new location.
+- Another optimization way is to use short key names (B-Tree+)
+- Another optimization way is to use Extra pointers for each node to point previous and next nodes
 
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
