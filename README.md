@@ -127,6 +127,77 @@ To Improve the previous way for performance,
 ## B-Tree vs SSTable
 ![Untitled](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/SSTable%20vs%20BTree.png)
 
+# Other Indexes
+
+## Secondary Index
+
+This index based on secondary key (foreign key) when doing joins between table for better performance. The main difference between primary key and foreign that keys are not unique. Both B-Trees and LSM-Trees can have *secondary indexes*.
+
+It stores the reference (pointer) of the location in the head file (the place where actual rows are stored).
+
+When updating a new value:
+
+- If the new value is not larger than the old value, it will just override and keep the same reference (key) which will be good for writes performance
+- Else, We will need to provide extra space on the disk and this will require new reference key in the heap (all indexes need to be updated to point at the new heap location)
+
+The last point will reduce the performance for reads (because the heap location has changed to another location in the disk).
+
+## Clustered Index
+
+To solve previous mentioned issue, we will store the actual row within the index (called clustered index).
+
+Once I reached to the key, it will contains the data as well. 
+
+In SQL Server, primary index is always clustered index and you can specify one clustered index per table. 
+
+There is another index called covering index which **stores some** of a table’s columns within the index (not all data).
+
+Efficient for reads but they require additional storage and can add **overhead** on writes.
+
+## Multi Column Index
+
+Called also (Composite Index) which combines several fields into one key by appending one column to another. 
+
+The order of fields is very matter (because there is a relation and depends on it) like old phone book search, which provide an index from (lastName, firstName) to phone number.
+
+- Due to the sort order, the index can be used to find all the people with a particular last name, or all the people with a particular (lastName, firstName) combination.  However, the index is useless if you want to find all the people with a particular first name.
+
+Example of this index is geospatial index which used to search by latitude followed by longitude.
+
+```sql
+SELECT * FROM restaurants 
+WHERE latitude > 51.4946 AND latitude < 51.5079 
+AND longitude > -0.1162 AND longitude < -0.1004;
+```
+
+Since in this case the order is matter and latitude related to longitude, A standard B-tree or LSM-tree index is not able to answer that kind of query efficiently: **it can give you either all the restaurants in a range of latitudes**.
+
+Other use cases
+
+- On an ecommerce website you could use a three-dimensional (combination) index on the dimensions **(red, green, blue)** to search for products in a certain range of colors
+- Weather observations you could have a two-dimensional index on **(date, temperature)** in order to efficiently search for all the observations during the year 2013 where the temperature was between 25 and 30℃.
+
+## Full-Text Search and Fuzzy Index
+
+This index allow you to query for similar keys such as misspelled words.
+
+This index do normalization, lemmatization and stemming for each word. which ignore grammatical variations of words, and to search for occurrences of words near each other in the same document,
+and support various other features that depend on linguistic analysis of the text.
+
+Lucene engine (used in elastic search) uses a SSTable-like structure (small in-memory index) that tells queries at which offset in the sorted file they need to look for a key.
+
+## Storing Data In-Memory
+
+In-memory databases are much faster but less durable and more expensive.
+
+Memcached is caching DB where it’s acceptable for data to be lost if a machine is restarted.
+
+To make sure of **durability**, writing a log of changes to disk with **periodic snapshots**, or by **replicating state to other machines**. When an in-memory database is restarted,  it needs to reload its state, either from disk or over the network from a replica.
+
+Products such as **VoltDB**, **MemSQL**, and **Oracle TimesTen** (Not free) are in-memory databases with a relational model, and the vendors claim that they can offer big performance improvements by removing all the overheads associated with managing on-disk data structures.
+
+Redis and Couchbase (open source) provide weak durability by writing to disk asynchronously.
+
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
 
