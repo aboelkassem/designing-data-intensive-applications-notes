@@ -117,10 +117,10 @@ If you want to add a new key, you need to find the page whose range encompasses 
 ### B-Tree Reliability
 In order to make the database resilient to crashes
 
-- B Tree uses **Write AHead Log (WAL)** ⇒ This is an append-only file to which every B-tree modification must be written before it can be applied to the pages of the tree itself.
+- B Tree uses **Write Ahead Log (WAL)** ⇒ This is an append-only file to which every B-tree modification must be written before it can be applied to the pages of the tree itself.
 
 To Improve the previous way for performance, 
-- They use new way called **Copy On Write** scheme, Any new data written to a different location, and a new version of the parent pages in the tree is created, pointing at the new location.
+- They use a new way called **Copy On Write** scheme, Any new data is written to a different location, and a new version of the parent pages in the tree is created, pointing at the new location.
 - Another optimization way is to use short key names (B-Tree+)
 - Another optimization way is to use Extra pointers for each node to point previous and next nodes
 
@@ -162,7 +162,7 @@ The order of fields is very matter (because there is a relation and depends on i
 
 - Due to the sort order, the index can be used to find all the people with a particular last name, or all the people with a particular (lastName, firstName) combination.  However, the index is useless if you want to find all the people with a particular first name.
 
-Example of this index is geospatial index which used to search by latitude followed by longitude.
+An example of this index is a geospatial index which is used to search by latitude followed by longitude.
 
 ```sql
 SELECT * FROM restaurants 
@@ -170,21 +170,21 @@ WHERE latitude > 51.4946 AND latitude < 51.5079
 AND longitude > -0.1162 AND longitude < -0.1004;
 ```
 
-Since in this case the order is matter and latitude related to longitude, A standard B-tree or LSM-tree index is not able to answer that kind of query efficiently: **it can give you either all the restaurants in a range of latitudes**.
+Since in this case, the order is matter and latitude related to longitude, A standard B-tree or LSM-tree index is not able to answer that kind of query efficiently: **it can give you either all the restaurants in a range of latitudes**.
 
 Other use cases
 
-- On an ecommerce website you could use a three-dimensional (combination) index on the dimensions **(red, green, blue)** to search for products in a certain range of colors
+- On an e-commerce website you could use a three-dimensional (combination) index on the dimensions **(red, green, blue)** to search for products in a certain range of colors
 - Weather observations you could have a two-dimensional index on **(date, temperature)** in order to efficiently search for all the observations during the year 2013 where the temperature was between 25 and 30℃.
 
 ## Full-Text Search and Fuzzy Index
 
-This index allow you to query for similar keys such as misspelled words.
+This index allows you to query for similar keys such as misspelled words.
 
-This index do normalization, lemmatization and stemming for each word. which ignore grammatical variations of words, and to search for occurrences of words near each other in the same document,
-and support various other features that depend on linguistic analysis of the text.
+This index does normalization, lemmatization, and stemming for each word. which ignores grammatical variations of words, and searches for occurrences of words near each other in the same document,
+and support various other features that depend on the linguistic analysis of the text.
 
-Lucene engine (used in elastic search) uses a SSTable-like structure (small in-memory index) that tells queries at which offset in the sorted file they need to look for a key.
+Lucene engine (used in elastic search) uses an SSTable-like structure (small in-memory index) that tells queries at which offset in the sorted file they need to look for a key.
 
 ## Storing Data In-Memory
 
@@ -200,7 +200,7 @@ Redis and Couchbase (open source) provide weak durability by writing to disk asy
 
 ## Online Transaction Processing (OLTP) vs Analytics Processing (OLAP)
 
-**Online Transaction Processing (ALTP)** is a pattern to ready some specific rows/data in the database (a transaction to DB)
+**Online Transaction Processing (ALTP)** is a pattern to read some specific rows/data in the database (a transaction to DB)
 
 - A transaction needn’t necessarily have ACID (atomicity, consistency, isolation, and durability) properties. Transaction processing just means allowing clients to make **low-latency reads and writes** as opposed to **batch processing jobs (analytics OLAP)**, which only run periodically(for example, once per day).
 - Supported databases: MySQL, Oracle, PostgresSQL, Cassandra, SAP HANA, SQL Server
