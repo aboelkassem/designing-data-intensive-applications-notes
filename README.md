@@ -221,6 +221,37 @@ Data is extracted from OLTP databases (using either a periodic data dump or a co
 
 ![Untitled](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/data-warehouse-etl.png)
 
+## Stars and Snowflakes: Schemas for Analytics
+
+These two schemes are used for data warehouse and OLAP
+
+**Star Scheme**
+
+The main and big table called **fact table** while other tables called **Dimension table**
+The fact table determined based on business, it can be Transaction table for banking, sales table .. etc
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/data-warehouse-star-scheme-1.png" width="400" hight="400"/>
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/data-warehouse-star-scheme-2.png" width="400" hight="400"/>
+</p>
+
+Snowflakes Scheme is like Star scheme but more normalized 
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/data-warehouse-snowflakes-scheme.png" width="400" hight="400"/>
+</p>
+
+Example of OLAP query to know whether people are more inclined to buy fresh fruit or candy, depending on the day of the week.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/olap-query.png" width="400" hight="400"/>
+</p>
+
+Comparison of OLTP vs OLAP
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/images/olap-vs-oltp.png" width="400" hight="400"/>
+</p>
+
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
 
