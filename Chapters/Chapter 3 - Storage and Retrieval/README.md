@@ -1,4 +1,26 @@
 ## Chapter 3: Storage and Retrieval
+## Table of content
+  * [Data Structures That Power Your Database](#data-structures-that-power-your-database)
+  * [Log Structured Storage (Hash Index)](#log-structured-storage--hash-index-)
+    + [The issues of this index and how to solve them](#the-issues-of-this-index-and-how-to-solve-them)
+    + [The Props of Log structured hash index](#the-props-of-log-structured-hash-index)
+    + [The limitations of Log structured hash index](#the-limitations-of-log-structured-hash-index)
+  * [SSTable (Stored String Tables)](#sstable--stored-string-tables-)
+  * [B-Tree](#b-tree)
+    + [B-Tree Reliability](#b-tree-reliability)
+  * [B-Tree vs SSTable](#b-tree-vs-sstable)
+- [Other Indexes](#other-indexes)
+  * [Secondary Index](#secondary-index)
+  * [Clustered Index](#clustered-index)
+  * [Multi Column Index](#multi-column-index)
+  * [Full-Text Search and Fuzzy Index](#full-text-search-and-fuzzy-index)
+  * [Storing Data In-Memory](#storing-data-in-memory)
+  * [Online Transaction Processing (OLTP) vs Analytics Processing (OLAP)](#online-transaction-processing--oltp--vs-analytics-processing--olap-)
+  * [Database Warehouse](#database-warehouse)
+  * [Stars and Snowflakes: Schemas for Analytics](#stars-and-snowflakes--schemas-for-analytics)
+  * [Column Storage](#column-storage)
+    + [The benefits of Columnar storage](#the-benefits-of-columnar-storage)
+
 ## Data Structures That Power Your Database
 
 Imagine having the world's simplest database at your disposal, implemented using just two Bash functions. This minimalist yet functional database allows you to store and retrieve key-value pairs effortlessly. Here's the code snippet that brings this database to life:
