@@ -27,7 +27,7 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
 
 # License
-The content in this repository is provided under the [MIT License](https://opensource.org/license/mit). You are free to use, modify, and distribute the notes for personal educational purposes.
+The content in this repository is provided under the [MIT License](https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/LICENSE). You are free to use, modify, and distribute the notes for personal educational purposes.
 
 # Feedback and Support
 If you have any feedback, suggestions, or questions about my personal notes, please feel free to reach out to me. Your support and encouragement are greatly appreciated.
