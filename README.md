@@ -6,11 +6,22 @@ This repository serves as a collection of my own notes and summaries for studyin
 
 The book is available [here](https://www.oreilly.com/library/view/designing-data-intensive-applications/9781491903063).
 
-
-# Table Of Content
-
-# Part I: Foundation of Data Systems
-## [Chapter 3: Storage and Retrieval](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval)
+## Summaries
+- Part I: Foundation of Data Systems
+	- Chapter 1: Reliable, Scalable, and Maintainable Applications (In Progress)
+	- Chapter 2: Data Models and Query Languages (In Progress)
+	- [Chapter 3: Storage and Retrieval](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval)
+	- Chapter 4: Encoding and Evolution (In Progress)
+- Part II: Distributed Data 
+	- Chapter 5: Replication (In Progress)
+	- Chapter 6: Partitioning (In Progress)
+	- Chapter 7: Transactions (In Progress)
+	- Chapter 8: The Trouble with Distributed Systems (In Progress)
+	- Chapter 9: Consistency and Consensus (In Progress)
+- Part III: Derived Data
+	- Chapter 10: Batch Processing (In Progress)
+	- Chapter 11: Stream Processing (In Progress)
+	- Chapter 12: The Future of Data Systems (In Progress)
 
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
