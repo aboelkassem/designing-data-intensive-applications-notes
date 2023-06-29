@@ -257,3 +257,52 @@ Comparison of OLTP vs OLAP
 <p align="center" width="100%">
   <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval/images/olap-vs-oltp.png" width="400" hight="400"/>
 </p>
+
+## Column Storage
+
+For OLAP, if your fact table have trillions of rows and hundreds of columns and want to doing a query to only access 4 or 5 columns like the following query
+
+```sql
+SELECT
+	dim_date.weekday, dim_product.category,
+	SUM(fact_sales.quantity) AS quantity_sold
+FROM fact_sales
+	JOIN dim_date ON fact_sales.date_key = dim_date.date_key
+	JOIN dim_product ON fact_sales.product_sk = dim_product.product_sk
+WHERE
+	dim_date.year = 2013 AND
+	dim_product.category IN ('Fresh fruit', 'Candy')
+GROUP BY
+	dim_date.weekday, dim_product.category;
+```
+
+In most of OLTP databases, the storage is row-oriented fashion (rows are stored next to each other in the disk), which the storage engine still needs to load all rows of all columns from disk into memory to parse them and filter out those that don’t meet the required conditions. What can take a long time.
+
+So, the column-oriented storage will be more suitable for that case. Which instead of storing all values of rows together, we will store all values of **columns** together instead.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval/images/columnar-storage.png" width="500" hight="500"/>
+</p>
+
+We will store each column into a file containing the value rows.
+
+### The benefits of Columnar storage
+
+- Efficient performance for reads and aggregations on specific columns
+- Compression Support with Bitmap and Run-length encoding for product_sk column example.
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval/images/columnar-storage-bitmap.png" width="500" hight="500"/>
+    </p>
+    
+    Bitmap helps with reads query like WHERE IN (like *WHERE product_sk IN (30, 68, 69)*), WHERE AND (like *WHERE product_sk = 31 AND store_sk = 3*) which apply AND, OR operators to binary indexes.
+    
+- Vectorized processing with SIMD (single instruction multiple data)
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval/images/columnar-storage-simd.png" width="500" hight="500"/>
+    </p>
+
+- For Sorting, We don’t sort single column and leave the others unchanged.
+
+A helpful technique for data warehouse is *materialized aggregates*, which caches some of the aggregated data that are used most often. In relational model, this can be created using *materialized views*.
