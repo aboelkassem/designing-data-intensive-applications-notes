@@ -163,3 +163,64 @@ As we discussed above about reader schema and writer schema. Avro just resolves 
 </p>
 
 forward compatibility means that you can have a **new version** of the schema as **writer** and an **old version** of the schema as **reader**. Conversely, backward compatibility means that you can have a **new version of the schema as reader** and an **old version as writer**.
+
+## Dataflows
+
+There are three ways of dataflows, through databases, service, or async message passing.
+
+### Dataflow through databases
+
+When doing rolling upgrade for your database, database may be written by a newer version of the code, and subsequently read by an older version of the code that is still running. Thus, forward compatibility is also often required for databases.
+
+The following example shows when an older version of the application updates data previously written by a newer version of the application, data may be lost if you’re not careful.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%204%20-%20Encoding%20and%20Evolution/images/database-compatibility.png" width="600" hight="500"/>
+</p>
+
+### Dataflow through Services (REST and RPC)
+
+Communication is done over network, this called web services which talking to the service over http protocol.
+
+- Client(web browsers or mobile or desktop)/server
+- A server can itself be a client to another service (for example, a web app server acts as client to a database)
+- Service-Oriented Architecture (SOA) and Microservices architecture
+
+Three popular approaches to web services: REST, SOAP, and RPC.
+
+**REST** is not a protocol, but rather a design philosophy that builds upon the principles of HTTP Like cache control, authentication, and content type negotiation. Support OpenAPI (Swagger) to produce documentation. There is no any code generation or software installation to debug it. REST seems to be the predominant style for public APIs
+
+**SOAP** is an XML-based protocol for making network API requests that also done over HTTP. Has its own features like WSDL for code generation. REST is commonly used compared to SOAP.
+
+***Remote Procedure Call* (RPC)** is a dataflow model that tries to make a request to a remote service looks like a local function call. However, it is *flawed* due to the difference between network call and local call:
+
+- Network call is unpredictable, client would have to retry failed requests for example
+- Network calls can return without a result due to a time out
+- Retrying might cause an action to be performed twice (unless idempotence is used)
+- Network latency is wildly variable
+- Calling local function with memory reference might be hard to translate to a network call
+
+**Thrift and Avro** come with RPC support included. **gRPC** is an RPC implementation using **Protocol Buffers.**
+
+RPC protocols with a binary encoding format can achieve better performance than something generic like JSON over REST. 
+
+The main focus of RPC frameworks is on requests between services owned by the same organization, typically within the same datacenter.
+
+For RPC, we can make a simplifying assumption in the case of dataflow through services: it is reasonable to assume that all the servers will be updated first, and all the clients second. Thus, you only need backward compatibility on requests, and forward compatibility on responses.
+
+Thrift, gRPC, Avro RPC, SOAP, REST all support forward compatibility and backward compatibility
+
+### Dataflow through async message passing.
+
+Here, the client request(called **message**) send to intermediary called **message broker or queue** to store the message temporarily.
+
+- Improves system reliability when the service is unavailable
+- Message cannot be lost
+- Distributed and concurrency sends message to multiple nodes
+- Decouple the sender from the recipient
+
+Popular message brokers like RabbitMQ, ActiveMQ, Kafka, NATS
+
+Client sends a message to a named queue or **topic**, and the **broker** ensures that the message is delivered to one or more **consumers** of or subscribers to that queue or topic. There can be many producers and many consumers on the same topic.
+
+In message format, you can use any encoding format. If the encoding is backward and forward compatible.
