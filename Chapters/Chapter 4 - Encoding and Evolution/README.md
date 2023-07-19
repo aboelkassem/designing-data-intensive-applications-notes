@@ -1,6 +1,18 @@
 ## Chapter 4: Encoding and Evolution
 ## Table of content
-
+- [Data Representation](#data-representation)
+- [Schema](#schema)
+- [Formats for Encoding Data](#formats-for-encoding-data)
+  * [JSON](#json)
+  * [XML](#xml)
+  * [BSON](#bson)
+  * [MessagePack](#messagepack)
+  * [Thrift and Protocol Buffer](#thrift-and-protocol-buffer)
+  * [Avro](#avro)
+- [Dataflows](#dataflows)
+  * [Dataflow through databases](#dataflow-through-databases)
+  * [Dataflow through Services (REST and RPC)](#dataflow-through-services--rest-and-rpc-)
+  * [Dataflow through async message passing.](#dataflow-through-async-message-passing)
 
 Changes to an application’s features also requires a change to data that it stores: perhaps a new field or record type needs to be captured (also, changes on Database schema).
 
