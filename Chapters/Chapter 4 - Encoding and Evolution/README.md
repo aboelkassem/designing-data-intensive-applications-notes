@@ -130,3 +130,36 @@ It depends on the tag field, If a field value is not set, it is simply deleted f
 In Forward compatibility, If old code (which doesn’t know about the new tag numbers you added) tries to read data written by new code, including a new field with a tag number it doesn’t recognize and ignore that field. **just read what needed data.**
 
 In backward compatibility, As long as each field has a **unique tag number**, new code can always read old data, because the tag numbers still have the same meaning. The only detail is that if you add a new field, you cannot make it **required.** So every field you add after the initial deployment of the schema must be **optional or have a default value**
+
+### Avro
+
+It was started in 2009 as a subproject of Hadoop.
+
+**Support backward and forward compatibility**
+
+```protobuf
+record Person {
+	string                 userName;
+	union { null, long }   favoriteNumber = null;
+	array<string>          interests;
+}
+```
+
+The main difference that Avro don’t depend on field tag like previous formats. and there is no nothing to identify fields or their datatypes.
+
+The binary encoding is depends on the order that they appear in the schema and use the schema to tell you the datatype of each field.
+
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%204%20-%20Encoding%20and%20Evolution/images/avro.png" width="700" hight="500"/>
+</p>
+
+**How Avro handle schema changes while keeping backward and forward compatibility?**
+
+As we discussed above about reader schema and writer schema. Avro just resolves the differences between writer’s schema and the reader’s schema.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%204%20-%20Encoding%20and%20Evolution/images/avro-schema-comparsion.png" width="600" hight="500"/>
+</p>
+
+forward compatibility means that you can have a **new version** of the schema as **writer** and an **old version** of the schema as **reader**. Conversely, backward compatibility means that you can have a **new version of the schema as reader** and an **old version as writer**.
