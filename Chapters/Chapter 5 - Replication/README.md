@@ -213,3 +213,20 @@ This describes the communication paths between the leaders writes. If you have t
 - **All-to-all topology**: each node sends all writes to all nodes
 
 The most general topology is all-to-all. MySQL by default supports circular topology. A problem with circular and star topologies is that if just one node fails.
+
+## Leaderless Replication
+
+When our system is *write-intensive*, leader(s) may act as a bottleneck, that's when *leader-less replication* comes in handy, also known as *Dynamo-style (*introduced by Amazon Dynamo internally , Not DynamoDB*)*. The clients send their writes and reads to several replicas in parallel.
+
+In some leaderless implementations, the client directly sends its writes to several replicas, while in others, a **coordinator node** does this on behalf of the client.
+
+When a Node Is Down, the client depend on received number of ok responses to determine if write successfully or not. When read, the client sends several nodes in parallel (you may get different responses) so it depends on most updated value attached with version number.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/leaderless-based.png" width="700" hight="500"/>
+</p>
+
+When the offline node comes back it uses **Read repair and anti-entropy** processes to catch up the updated values.
+
+- **Read repair**: when a client makes a read from several nodes in parallel, it can detect any stale responses.
+- **Anti-entropy**: a background process that constantly looks for differences in the data between replicas and copies any missing data from one replica to another.
