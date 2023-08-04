@@ -1,11 +1,41 @@
 ## Chapter 5: Replication
+## Table of content
+- [Leaders and Followers](#leaders-and-followers)
+- [Synchronous vs Asynchronous Replication](#synchronous-vs-asynchronous-replication)
+- [Setting Up New Followers](#setting-up-new-followers)
+- [Handling Node Outages](#handling-node-outages)
+  * [Follower failure: Catch-up recovery](#follower-failure--catch-up-recovery)
+  * [Leader failure: Failover](#leader-failure--failover)
+- [How does replication work (Implementation of replication log)](#how-does-replication-work--implementation-of-replication-log-)
+  * [Statement-based replication](#statement-based-replication)
+  * [Write-ahead log (WAL) shipping](#write-ahead-log--wal--shipping)
+  * [Logical (row-based) log replication](#logical--row-based--log-replication)
+  * [Trigger-based replication](#trigger-based-replication)
+- [Problems with Replication Lag](#problems-with-replication-lag)
+  * [Reading your own writes](#reading-your-own-writes)
+  * [Monotonic Reads](#monotonic-reads)
+  * [Consistent Prefix reads](#consistent-prefix-reads)
+- [Multi-Leader Replication](#multi-leader-replication)
+  * [Use Cases](#use-cases)
+- [Handling Write Conflicts](#handling-write-conflicts)
+  * [Avoid Conflict](#avoid-conflict)
+  * [Converging toward a consistent state](#converging-toward-a-consistent-state)
+  * [Custom conflict resolution logic](#custom-conflict-resolution-logic)
+  * [Multi-Leader Replication Topologies](#multi-leader-replication-topologies)
+- [Leaderless Replication](#leaderless-replication)
+  * [Quorums for reading and writing](#quorums-for-reading-and-writing)
+  * [Sloppy Quorums](#sloppy-quorums)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+
 Replication means keeping a copy of the same data on multiple machines that are connected via a network. Why we do replication?
 
 - To keep data geographically close to your users (and thus reduce latency)
 - Increase availability
 - To scale out the number of machines that can serve read queries (Increase **read** throughput)
 
-## **Leaders and Followers**
+## Leaders and Followers
 
 leader-based replication (or master-slave) is designated the leader when clients want to **write** to the database, they must send their requests to the leader, first writes the new data into its local storage, then sends the data change to all of its **followers**.
 
