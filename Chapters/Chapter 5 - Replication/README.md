@@ -200,3 +200,16 @@ Most multi-leader replication tools let you write conflict resolution logic usin
 - **On Write**: use conflict handler as background process and it must execute quickly.
 - **On Read**: Like Github pull request conflicts, it shows multiple versions of the data are returned to the application. The application may prompt the user or automatically resolve the conflict, and write the result back to the database.
 
+### Multi-Leader Replication Topologies
+
+This describes the communication paths between the leaders writes. If you have two leaders, leader 1 must send all of its writes to leader 2, and vice versa.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/multi-leader-topologies.png" width="700" hight="500"/>
+</p>
+
+- **Circular topology**: each node receives writes from one node and forwards those writes (plus any writes of its own) to one other node.
+- **Star topology:** one centered root node forwards writes to all of the other nodes.
+- **All-to-all topology**: each node sends all writes to all nodes
+
+The most general topology is all-to-all. MySQL by default supports circular topology. A problem with circular and star topologies is that if just one node fails.
