@@ -80,4 +80,50 @@ Automatic failover may be go wrong
 - Promoted out of update follower can cause a conflicts and discording some data
 
 Thus, some operations team prefer to perform failovers manually.
+## How does replication work (Implementation of replication log)
 
+### Statement-based replication
+
+The leader logs every write request (statement) and sends that statement (Insert, Update, Delete) to its followers and then execute this SQL query. This method is used in MySQL.
+
+Disadvantages of this approach
+
+- Inconsistent data when use nondeterministic function, such as **NOW()** or **RAND()**
+- If statements use an autoincrementing column, or depend on the existing data, then the queries  must be executed in exactly the same order on each replica.
+- Statements that have side effects (e.g., triggers, stored procedures, user-defined functions) may result in different side effects occurring on each replica.
+
+### Write-ahead log (WAL) shipping
+
+The log is an append-only all writes by the leader to its followers. It not send SQL query statement, it builds a copy of the exact same data structures as found on the leader. This used in PostgreSQL and Oracle.
+
+The disadvantage of this approach is makes replication closely coupled to the storage engine. If the database changes its storage format from one version to another, it is typically not possible to run different versions of the database software on the leader and the followers. Then, upgrades require downtime.
+
+### Logical (row-based) log replication
+
+Another way to decoupled from the storage engine. Is to send the data as rows (records) from leader to the followers. For delete/update, just use the row identifier to be deleted/updated.
+
+### Trigger-based replication
+
+Is more flexible way to do replication by application code not database system.
+
+## Problems with Replication Lag
+
+Leader-based replication handles all writes to go through Leader, and read queries go to any replica. So, its more suits to serve read-only requests. Also, it works asynchronous 
+
+Also, if an application reads from an asynchronous follower, it may see outdated information if the follower has fallen behind.
+
+Eventual consistency is when you stop writing to the database and wait a while until the followers will eventually catch up and become consistent.
+
+There are three problems that maybe occur when there is a replication lag.
+
+### Reading your own writes
+
+**The problem**: When user writes the data to leader, it read it from followers. In async followers, it may not have reached the replica yet.
+
+In situation, there is **read-after-write** consistency which guarantee that if user reload the page, it always see any updates they summitted byself.
+
+How to implement it?
+
+- When reading something that the user may have modified, read it from the leader; otherwise, read it from a follower. Like user profile information on a social network is normally only editable by the owner of the profile. So always read the user’s own profile from the leader.
+- If most things in the app are editable by the user, then above approach won’t work. Another way is estimate one minute to the leader after last update, then after that read from followers.
+    - The problem here is the last update timestamp is associated with client device, so if there is multiple device, then cannot read from the leader at the same time, just who made the write will.
