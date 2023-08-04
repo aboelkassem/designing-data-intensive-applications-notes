@@ -156,3 +156,47 @@ And third follower see that in disorder
 </p>
 
 To solve this problem, make sure that casually **related writes** are written to the same partition, and are written in the same order.
+
+## Multi-Leader Replication
+
+Instead of one leader to handle all writes, there is another approach for multi-leader replication. When a leader process a write, it must forward that change to all other followers.
+
+### Use Cases
+
+- **Multi Datacenter**: With a normal leader-based replication setup, the leader has to be in one of the datacenters, and all writes must go through that datacenter. In multi-leader configuration, you can have a leader in each datacenter.
+    
+    Some databases support multi-leader configurations by default, but it is also often implemented with external tools, such as Tungsten Replicator for MySQL, BDR for PostgreSQL, and GoldenGate for Oracle.
+    
+    The big issue in this approach is the same data may be concurrently modified in two different datacenters, and those write conflicts must be resolved.
+  
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/multi-leader-based.png" width="700" hight="500"/>
+</p>
+
+- **Clients with offline operation**: every device has a local database that acts as a leader (it accepts write requests), and there is an asynchronous multi-leader replication process (sync) between the replicas of your calendar on all of your devices. The replication lag may be hours or even days, depending on when you have internet access available.
+- **Collaborative editing**: When one user edits a document, the changes are instantly applied to their local replica and asynchronously replicated to the server and any other users who are editing the same document.
+
+
+## Handling Write Conflicts
+
+Example: User 1 changes the title of the page from A to B, and user 2 changes the title from A to C at the same time. Each user’s change is successfully applied to their local leader. However, when the changes are asynchronously replicated, a conflict is detected.
+  
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/multi-leader-based-conflicts.png" width="700" hight="500"/>
+</p>
+
+### Avoid Conflict
+
+By ensuring all writes go through the same leader. For example a user can edit their own data, you can ensure that requests from a particular user are always routed to the same datacenter and use the leader in that datacenter for reading and writing.
+
+### Converging toward a consistent state
+
+Give each write a **unique ID** (e.g., a timestamp, a long random number, a UUID, or a hash of the key and value), pick the write with the highest ID as the winner, and throw away the other writes. If a timestamp is used, this technique is known as **last write wins** (LWW)
+
+### Custom conflict resolution logic
+
+Most multi-leader replication tools let you write conflict resolution logic using application code.
+
+- **On Write**: use conflict handler as background process and it must execute quickly.
+- **On Read**: Like Github pull request conflicts, it shows multiple versions of the data are returned to the application. The application may prompt the user or automatically resolve the conflict, and write the result back to the database.
+
