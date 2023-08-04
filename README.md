@@ -13,7 +13,7 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 	- [Chapter 3: Storage and Retrieval](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval)
 	- [Chapter 4: Encoding and Evolution](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%204%20-%20Encoding%20and%20Evolution)
 - Part II: Distributed Data 
-	- Chapter 5: Replication (In Progress)
+	- [Chapter 5: Replication](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%205%20-%20Replication)
 	- Chapter 6: Partitioning (In Progress)
 	- Chapter 7: Transactions (In Progress)
 	- Chapter 8: The Trouble with Distributed Systems (In Progress)
