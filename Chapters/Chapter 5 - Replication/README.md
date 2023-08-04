@@ -43,4 +43,41 @@ The disadvantage of synchronous
 
 - The leader must block all writes and wait until the synchronous replica is available again.
 
-For the above reason, **the best practice you make one follow synchronous and the other are asynchronous** (this approach sometimes called semi-synchronous).
+For the above reason, **the best practice you make one follow synchronous and the other is asynchronous** (this approach is sometimes called semi-synchronous).
+
+## Setting Up New Followers
+
+How do you ensure that the new follower has an accurate copy of the leader’s data? copying data files from one node to another will not work as there is constantly writing to DB.
+
+To set up new follower without downtime
+
+- Take a consistent snapshot of the leader’s database at some point in time.
+- Copy the snapshot to the new follower node.
+- The follower **connects** to the leader and **requests** all the data changes that have
+happened since the snapshot was taken.
+
+## Handling Node Outages
+
+### Follower failure: Catch-up recovery
+
+On its local disk, each follower keeps a log or snapshot of the data changes it has received from the leader. 
+
+The follower can recover quite easily: from its log, it knows the last transaction that was processed before the fault occurred. Thus, the follower can connect to the leader and request all the data changes that occurred during the time when the follower was disconnected.
+
+### Leader failure: Failover
+
+If the leader crashed, one of the following needs to be promoted to be the new leader, and clients  need to be reconfigured to send their writes to the new leader, and the other followers need to start consuming data changes from the new leader. This process is called **failover**.
+
+Failover can be happened manually (by administrator) or automatically by the following steps:
+
+1. Determining that the leader has failed (based on node respond timeout)
+2. Choosing a new leader through election process or by most updated data node.
+3. Reconfiguring the system to use the new leader
+
+Automatic failover may be go wrong
+
+- If asynchronous replication is used, the new leader may not have received all the writes from the old leader before it failed.
+- Promoted out of update follower can cause a conflicts and discording some data
+
+Thus, some operations team prefer to perform failovers manually.
+
