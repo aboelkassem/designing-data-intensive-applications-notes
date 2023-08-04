@@ -25,7 +25,6 @@ Asynchronous replication mean that we will response immediately to the user, and
 
 The following example shows Leader-based replication with one synchronous and one asynchronous follower.
 
-
 <p align="center" width="100%">
   <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/sync-vs-async-replication.png" width="700" hight="500"/>
 </p>
@@ -127,3 +126,33 @@ How to implement it?
 - When reading something that the user may have modified, read it from the leader; otherwise, read it from a follower. Like user profile information on a social network is normally only editable by the owner of the profile. So always read the user’s own profile from the leader.
 - If most things in the app are editable by the user, then above approach won’t work. Another way is estimate one minute to the leader after last update, then after that read from followers.
     - The problem here is the last update timestamp is associated with client device, so if there is multiple device, then cannot read from the leader at the same time, just who made the write will.
+
+### Monotonic Reads
+
+**The problem**: Occur when reading from asynchronous followers is that it’s possible for a user to see things **moving backward in time**. Like the following diagram shows when two replica (one with little lag and other with greater lag) who read the same query from replica and when refresh didn’t read it. This scenario happens when a user refreshes a web page, it routed to random followers.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/monotonic-reads.png" width="700" hight="500"/>
+</p>
+
+Monotonic reads guarantee that doesn’t happen by making all user queries to the same replica (to make that we hash userId with replica). if that replica fails, the user’s queries will need to be rerouted to another replica.
+
+### Consistent Prefix reads
+
+**The problem**: If there is disorder of sequence of writes (if the data is sharded/partitioned)
+
+For example, if there dialog between two person like this. 
+
+- Mr. Poons: How far into the future can you see, Mrs. Cake?
+- Mrs. Cake: About ten seconds usually, Mr. Poons.
+
+And third follower see that in disorder
+
+- Mrs. Cake: About ten seconds usually, Mr. Poons.
+- Mr. Poons: How far into the future can you see, Mrs. Cake?
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/consistent-prefix-reads.png" width="700" hight="500"/>
+</p>
+
+To solve this problem, make sure that casually **related writes** are written to the same partition, and are written in the same order.
