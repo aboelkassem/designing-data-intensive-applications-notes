@@ -26,9 +26,6 @@
   * [Quorums for reading and writing](#quorums-for-reading-and-writing)
   * [Sloppy Quorums](#sloppy-quorums)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
-
 Replication means keeping a copy of the same data on multiple machines that are connected via a network. Why we do replication?
 
 - To keep data geographically close to your users (and thus reduce latency)
@@ -41,7 +38,7 @@ leader-based replication (or master-slave) is designated the leader when clients
 
 When a client wants to read from the database, it can query either the leader or any of the followers. However, writes are only accepted on the leader.
 
-This mode is build-in feature in relational databases such as PostgresSQL, MySQL, Oracle, and SQL Server. Also, for non-relational databases such as MongoDB, RethinkDB, Espresso. Also in message brokers such as Kafka, RabbitMQ.
+This mode is a built-in feature in relational databases such as PostgreSQL, MySQL, Oracle, and SQL Server. Also, for non-relational databases such as MongoDB, RethinkDB, Espresso. Also in message brokers such as Kafka, RabbitMQ.
 
 <p align="center" width="100%">
   <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/leader-based-replicaiton.png" width="700" hight="500"/>
@@ -72,13 +69,13 @@ The disadvantage of synchronous
 
 - The leader must block all writes and wait until the synchronous replica is available again.
 
-For the above reason, **the best practice you make one follow synchronous and the other is asynchronous** (this approach is sometimes called semi-synchronous).
+For the above reason, **the best practice you make one follow synchronously and the other is asynchronous** (this approach is sometimes called semi-synchronous).
 
 ## Setting Up New Followers
 
 How do you ensure that the new follower has an accurate copy of the leader’s data? copying data files from one node to another will not work as there is constantly writing to DB.
 
-To set up new follower without downtime
+To set up new followers without downtime
 
 - Take a consistent snapshot of the leader’s database at some point in time.
 - Copy the snapshot to the new follower node.
@@ -95,20 +92,20 @@ The follower can recover quite easily: from its log, it knows the last transacti
 
 ### Leader failure: Failover
 
-If the leader crashed, one of the following needs to be promoted to be the new leader, and clients  need to be reconfigured to send their writes to the new leader, and the other followers need to start consuming data changes from the new leader. This process is called **failover**.
+If the leader crashes, one of the following needs to be promoted to be the new leader, and clients  need to be reconfigured to send their writes to the new leader, and the other followers need to start consuming data changes from the new leader. This process is called **failover**.
 
-Failover can be happened manually (by administrator) or automatically by the following steps:
+Failover can be happened manually (by the administrator) or automatically by the following steps:
 
 1. Determining that the leader has failed (based on node respond timeout)
-2. Choosing a new leader through election process or by most updated data node.
+2. Choosing a new leader through the election process or by the most updated data node.
 3. Reconfiguring the system to use the new leader
 
-Automatic failover may be go wrong
+Automatic failover may be going wrong
 
 - If asynchronous replication is used, the new leader may not have received all the writes from the old leader before it failed.
-- Promoted out of update follower can cause a conflicts and discording some data
+- Promoted update followers can cause conflicts and discarding some data
 
-Thus, some operations team prefer to perform failovers manually.
+Thus, some operations teams prefer to perform failovers manually.
 ## How does replication work (Implementation of replication log)
 
 ### Statement-based replication
@@ -123,21 +120,21 @@ Disadvantages of this approach
 
 ### Write-ahead log (WAL) shipping
 
-The log is an append-only all writes by the leader to its followers. It not send SQL query statement, it builds a copy of the exact same data structures as found on the leader. This used in PostgreSQL and Oracle.
+The log is an append-only all written by the leader to its followers. It not send SQL query statement, it builds a copy of the exact same data structures as found on the leader. This used in PostgreSQL and Oracle.
 
-The disadvantage of this approach is makes replication closely coupled to the storage engine. If the database changes its storage format from one version to another, it is typically not possible to run different versions of the database software on the leader and the followers. Then, upgrades require downtime.
+The disadvantage of this approach makes replication closely coupled to the storage engine. If the database changes its storage format from one version to another, it is typically not possible to run different versions of the database software on the leader and the followers. Then, upgrades require downtime.
 
 ### Logical (row-based) log replication
 
-Another way to decoupled from the storage engine. Is to send the data as rows (records) from leader to the followers. For delete/update, just use the row identifier to be deleted/updated.
+Another way to decouple from the storage engine. Is to send the data as rows (records) from the leader to the followers. For delete/update, just use the row identifier to be deleted/updated.
 
 ### Trigger-based replication
 
-Is more flexible way to do replication by application code not database system.
+Is the more flexible way to do replication by application code not a database system.
 
 ## Problems with Replication Lag
 
-Leader-based replication handles all writes to go through Leader, and read queries go to any replica. So, its more suits to serve read-only requests. Also, it works asynchronous 
+Leader-based replication handles all writes to go through Leader and read queries go to any replica. So, its more suits to serve read-only requests. Also, it works asynchronous 
 
 Also, if an application reads from an asynchronous follower, it may see outdated information if the follower has fallen behind.
 
