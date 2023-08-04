@@ -230,3 +230,28 @@ When the offline node comes back it uses **Read repair and anti-entropy** proces
 
 - **Read repair**: when a client makes a read from several nodes in parallel, it can detect any stale responses.
 - **Anti-entropy**: a background process that constantly looks for differences in the data between replicas and copies any missing data from one replica to another.
+
+
+### Quorums for reading and writing
+
+If there are n replicas, every write must be confirmed by w nodes to be considered successful, and we must query at least r nodes for each read. (In our example, n = 3, w = 2, r = 2.) As long as w + r > n, we expect to get an up-to-date value when reading, because at least one of the r nodes we’re reading from must be up to date. Reads and writes that obey these r and w values are called **quorum** reads and writes.
+
+The numbers of replicas to read from (r), and to write to (w) should be configured to follow the quorums formula: w + r > n, where (n) is the number of replicas. Smaller values of w or r results in more stale read values, but provides lower latency and higher availability.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%205%20-%20Replication/images/quorum.png" width="700" hight="500"/>
+</p>
+
+If w + r > n, at least one of the r replicas you read from must have seen the most recent successful write.
+
+If two writes occur concurrently, it is not clear which one happened first. In this case, the only safe solution is to merge the concurrent writes.
+
+Quorums appear to guarantee that a read returns the latest written value, in practice it is not so simple. Dynamo-style databases are generally optimized for use cases that can tolerate eventual consistency.
+
+### Sloppy Quorums
+
+This happen when w or r nodes are unavailable, sloppy quorums allowing write operations to be considered successful even if they are acknowledged by fewer replicas than the traditional quorum. For example, if the system has three replicas, a sloppy quorum could be defined as just one replica. This make the system temporally inconsistent until to be eventually consist in the background.
+
+Sloppy quorums are particularly useful for increasing write availability (more durability): as long as any w nodes are available, the database can accept writes.
+
+In Riak DB they are enabled by default, and in Cassandra and Voldemort they are disabled by default.
