@@ -65,3 +65,29 @@ Another example, on a social media site, one user may post many updates. If the 
 One problem still is when most reads and writes are for the **same key (causing hotspot and skewed partitions)**. for example on a social media site, a celebrity user with millions of followers may cause a storm of activity when they do something.
 
 This usually left for the application to handle this skew, typically by assigning **random bytes** at the beginning/end of this key to scatter it across all the replicas, however, this requires extra bookkeeping/work, as well as requests to all the replicas when reading.
+
+### Partitioning and Secondary Indexes
+
+**Partitioning Secondary Indexes by Document (Local Index)**
+
+In this indexing approach, each partition maintains its own secondary indexes (stores locally with the partition), covering only the documents in that partition.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%206%20-%20Partitioning/images/partitioning-secondary-index-by-document.png" width="700" hight="500"/>
+</p>
+
+Whenever you need to write to the database (to add, remove, or update a document) you only need to deal with the partition that contains the document ID that you are writing. (**Good on write performance).**
+
+The issue with this approach is the index duplication, in the above example, if you want to search for red cars, you need to send the query to **all partitions**, and combine all the results you get back (this technique called scatter/gather from all partitions) **(Not very good on read performance)**
+
+Nevertheless, it is widely used: MongoDB, Riak, Cassandra, Elasticsearch, SolrCloud, and VoltDB.
+
+**Partitioning Secondary Indexes by Term (Global Index)**
+
+Another option is to have a global secondary index which can also be partitioned, but using *term/topic* instead of *document*. Every partition would keep a secondary index of some of these terms (range of terms), 
+
+This makes reads more efficient, rather than doing scatter/gather in all partitions, but writes are slower and complicated.  However, in practice updates to global secondary indexes are **asynchronous** and very fast.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%206%20-%20Partitioning/images/partitioning-secondary-index-by-term.png" width="700" hight="500"/>
+</p>
