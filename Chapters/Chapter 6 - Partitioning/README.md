@@ -140,3 +140,33 @@ the issue with approach
 Like **Fixed number of partitions** but make the number of partition proportionally to nodes count to have a fixed number of partitions per node.  for example if I have 1000 partition for 10 nodes, if i crease the nodes to 20, then 2000 partitions. in Cassandra, 256 partitions per node by default
 
 It can be a good thing to have a human in the loop for rebalancing.
+
+**Request Routing**
+
+when a client wants to make a request, how does it know which node to connect to? which IP address and port number do I need to connect to?
+
+This general problem need **service discovery** which isn’t limited to just database
+
+there are a few different approaches to this problem
+
+- Allow clients to contact any node (e.g., via a round-robin load balancer). if that node owns the partition then handle it. otherwise, forward to another node
+- Send all requests from clients to a routing tier first (partition-aware load balancer).
+- Require that clients be aware of the partitioning and the assignment of partitions to nodes
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%206%20-%20Partitioning/images/partitioning-request-routing.png" width="700" hight="500"/>
+</p>
+
+Apache ZooKeeper is handle this routing and coordination to keep track of this cluster metadata.
+
+ZooKeeper maintains the authoritative mapping of partitions to nodes. Other actors, such as the routing tier or the partitioning-aware client, can subscribe to this information in ZooKeeper. Whenever a partition changes ownership, or a node is added or removed, ZooKeeper notifies the routing tier so that it can keep its routing information up to date.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%206%20-%20Partitioning/images/partitioning-zookeeper.png" width="700" hight="500"/>
+</p>
+
+LinkedIn’s Espresso, HBase, SolrCloud, and Kafka also use **ZooKeeper** to track partition assignment. MongoDB has a similar architecture, but it relies on its own config server implementation and **mongos** daemons as the routing tier.
+
+Cassandra and Riak take a different approach: they use a **gossip protocol** among the nodes to disseminate any changes in cluster state.
+
+Couchbase does not rebalance automatically. Normally it is configured with a routing tier called **moxi.**
