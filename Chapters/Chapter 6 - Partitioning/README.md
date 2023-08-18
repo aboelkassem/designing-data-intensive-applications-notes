@@ -1,4 +1,9 @@
 ## Chapter 6: Partitioning
+## Table of Content
+- [How do you partitioning data ?](#how-do-you-partitioning-data--)
+  * [Partitioning of Key-Value Data](#partitioning-of-key-value-data)
+  * [Partitioning and Secondary Indexes](#partitioning-and-secondary-indexes)
+  * [Rebalancing Partitions](#rebalancing-partitions)
 
 Partitions are defined in such a way that each pie of data (record, document) belongs to **one partition**.
 
