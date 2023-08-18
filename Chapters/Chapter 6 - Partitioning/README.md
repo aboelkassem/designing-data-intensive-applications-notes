@@ -91,3 +91,17 @@ This makes reads more efficient, rather than doing scatter/gather in all partiti
 <p align="center" width="100%">
   <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%206%20-%20Partitioning/images/partitioning-secondary-index-by-term.png" width="700" hight="500"/>
 </p>
+
+### Rebalancing Partitions
+
+Why I need rebalancing partitions? Over the time, things change in a database:
+
+- The queries/requests throughput increases ⇒ Add CPUs
+- The storage size increases ⇒ Add disks & RAM
+- A machine fails ⇒ Failover machines
+
+**Hash mod N (worst one)**
+
+This way we get hash of key and mod it by N nodes, since the result will be always from 0 to N. For example hash(key) mod 10 would return a number between 0 and 9 (if we write the hash as a decimal number, the hash mod 10 would be the last digit). If we have 10 nodes, numbered 0 to 9.
+
+**The problem** with this approach is N nodes changes most of the keys will need to be moved from one node to another. For example, say hash(key) = 123456. If you initially have 10 nodes, that key starts out on node 6 (because 123456 mod 10 = 6). When you grow to 11 nodes, the key needs to move to node 3 (123456 mod 11 = 3), and when you grow to 12 nodes, it needs to move to node 0 (123456 mod 12 = 0).
