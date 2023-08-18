@@ -105,3 +105,38 @@ Why I need rebalancing partitions? Over the time, things change in a database:
 This way we get hash of key and mod it by N nodes, since the result will be always from 0 to N. For example hash(key) mod 10 would return a number between 0 and 9 (if we write the hash as a decimal number, the hash mod 10 would be the last digit). If we have 10 nodes, numbered 0 to 9.
 
 **The problem** with this approach is N nodes changes most of the keys will need to be moved from one node to another. For example, say hash(key) = 123456. If you initially have 10 nodes, that key starts out on node 6 (because 123456 mod 10 = 6). When you grow to 11 nodes, the key needs to move to node 3 (123456 mod 11 = 3), and when you grow to 12 nodes, it needs to move to node 0 (123456 mod 12 = 0).
+
+**Fixed number of partitions (over paritioning)**
+
+Create many more partitions than nodes and assign several partitions to each one.
+
+Number of partitions does not change if the nodes number got changed (unlike hash mod N).
+
+For example, a database running on a cluster of **10 nodes** may be split into **1,000 partitions** from the outset so that approximately **100 partitions** are assigned to each node.
+
+So, if we add new node, a few partitions are steal, so each node will handle 1000/11 = 90 partitions
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%206%20-%20Partitioning/images/partitioning-rebalancing-fixed-number.png" width="700" hight="500"/>
+</p>
+
+This approach to rebalancing is used in Riak, Elasticsearch, Couchbase, and Voldemor.
+
+**The issue** is with this approach is not suitable when data size is unpredictable with fixed partitions number, partition management overhead, large partition slow down the rebalance.
+
+**Dynamic Partitioning with Data Size (B Tree like)**
+
+When a partition grows to exceed some configured size, it is split into two partitions so that approximately when shrinks below a configured size, we merge it with an adjacent partition.
+
+So this approach is adaptive partitions that grows with data automatically.
+
+the issue with approach
+
+- Initial partitioning, if you use 10 nodes, you will wait until initial partition to grow up to fit all these nodes dynamically.
+- Cannot work with key-range partitions, since growing up and shrinks is dynamic (randomly). It works well with hash-partitioned data. MongoDB since version 2.4 supports both key-range and hash partitioning, and it splits partitions dynamically in either case.
+
+**Partitioning proportionally to nodes count**
+
+Like **Fixed number of partitions** but make the number of partition proportionally to nodes count to have a fixed number of partitions per node.  for example if I have 1000 partition for 10 nodes, if i crease the nodes to 20, then 2000 partitions. in Cassandra, 256 partitions per node by default
+
+It can be a good thing to have a human in the loop for rebalancing.
