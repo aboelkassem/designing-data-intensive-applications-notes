@@ -197,3 +197,60 @@ In the above diagram there are two transactions initiated by previous transactio
 At some later time, when it is certain that no transaction can any longer access the deleted data, a garbage collection process in the database **removes** any rows marked for deletion and frees their space.
 
 Indexing might sound like a problem for snapshot isolation, but one solution is to have the index point to *all* versions of an object, while another approach (used in CouchDB) is to use an append-only/copy-on-write variant that doesn't overwrite pages in the underlying tree.
+
+### Preventing Lost Updates
+
+This is happens when two transactions writing concurrently (write-write conflict that can occur).
+
+A common pattern in databases is *read-modify-write*, which might lead to **lost update** problem. This problem occur when two concurrent transactions perform *read-modify-write* cycle, and one of the updates  was overridden and lost.
+
+There are variety of solutions that has been developed for solving the lost update problem:
+
+- **Atomic writes**: which is usually the best solution if the code can be expressed in terms of operations, that is like
+    
+    ```sql
+    UPDATE counters SET value = value + 1 WHERE key = 'foo';
+    ```
+    
+    - Atomic operations are implemented by **taking a lock on the object** when it is read so that no other transaction can read it until the update has been applied.
+    - Unfortunately, ORMs make it easy to accidentally write code that performs **unsafe** read-modify-write cycles instead of using atomic operations provided by the database.
+    - **MongoDB** provide atomic operations for making local modifications to a part of a JSON document, and **Redis** provides atomic operations for modifying data structures such as priority queues.
+- **Explicit locking**: if the database’s built-in atomic operations don’t provide the necessary functionality, is for the **application to explicitly lock** objects that are going to be updated. Then the application can perform a read-modify-write cycle, and if any other transaction tries to concurrently read the same object, it is forced to wait until the first read-modify-write cycle has completed.
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/explict-lock.png" width="700" hight="500"/>
+    </p>
+    
+- **Automatically deleting lost updates**: where the database allows the transaction to execute in parallel, and detects a lost update if happened, abort the transaction and force it to retry. An advantage to this is that the database performs the check efficiently in conjunction with snapshot isolation, and the detection happens automatically and is thus less error-prone.
+    - PostgreSQL’s repeatable read, Oracle’s serializable, and SQL Server’s snapshot isolation levels automatically detect when a lost update has occurred and **abort** the offending transaction. While MySQL, InnoDB’s repeatable read does not detect lost updates.
+- **Compare and set**: In databases that don’t provide transactions, you sometimes find an **atomic compare-and-set** CASE(x, Vold, Vnew) operation which allowing an update to happen only if the value has not changed since you last read it.
+- **Conflict resolution**: as in replicated databases, techniques based on locks and compare-set  doesn't apply, so one approach is to allow concurrent writes to create  several conflicting versions, and let the application code to resolve  (using *last write wins*) or merge them.
+
+### Write Skew
+
+The following example show another race condition problem (write skew) when concurrent writes happened
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/write-skew-example.png" width="700" hight="500"/>
+</p>
+
+In each transaction, your application first checks that two or more doctors are currently on call; if yes, it assumes it’s safe for one doctor to go off call. Since the database is using **snapshot isolation**, both checks return 2, so both transactions proceed to the next stage. Alice updates her own record to take herself off call, and Bob updates his own record likewise. Both transactions commit, and now no doctor is on call.
+
+Write skew can occur if two transactions read the same objects and updating two different objects.
+
+This can be fixed only through 
+
+- Serializable isolation
+- by configuring some customized constraints with triggers or materialized views as they involve  multiple objects
+- or by explicitly lock the rows that the transaction  depends on using `FOR UPDATE`.
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/write-skew-example-lock.png" width="700" hight="500"/>
+    </p>
+    
+
+### Phantoms
+
+The writes skew always read first then write, Phantom is where a write in one transaction changes the result of a search query in another transaction.
+
+**Phantom reads** occurs when, in the course of a transaction, new rows are added or removed by another transaction to the records being read, and there is no way to put locks on rows that might not be existing yet. This can be solved using *materialized conflicts* which is more like an artificial lock to the database. But, **serializable isolation** is always preferred over this approach.
