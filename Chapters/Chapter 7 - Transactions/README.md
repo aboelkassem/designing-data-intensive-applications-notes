@@ -82,3 +82,30 @@ To Fix this: we use Isolation
 - Any data it has written **successfully** will not be forgotten, even if there is a hardware fault or database crashes.
 - Implemented using write-ahead-log or replication
 - **Reliability guarantee** (perfect durability does not exist)
+
+## BASE
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/acid-vs-base.png" width="700" hight="500"/>
+</p>
+
+good reference: https://neo4j.com/blog/acid-vs-base-consistency-models-explained/
+
+- **Basically Available:** The system **appears** to work most of the time.
+- **Soft State:**
+    - We don’t have to be write-consistent (eg. read your own writes) or mutually consistent (between replicas) all time.
+    - The state the user put into the system that will go away (expire) if user doesn’t maintain (refresh) it. your system depends on the external user factor by using refresh
+- **Eventual Consistency**: the system will become consistent over time, given that the system doesn’t receive input during that time.
+
+Storage engines almost universally aim to provide *atomicity* and *isolation* on the level of single object. Atomicity can be implemented using log for crash recovery, and *isolation* using a lock on each object.
+
+Multi-object transactions might be needed when a foreign key references to a row in another table, or when de-normalized information and secondary indexes needs to be updated. However, many 
+distributed datastores abandoned multi-object transactions because they are difficult to implement across partitions.
+
+Leaderless replicated datastores won't undo something it has already done, so it's the application's responsibility to recover from errors.
+
+Retrying aborted transactions isn't prefect 
+
+- because If the transaction actually succeeded but the network failed while the server is trying to acknowledge the successful commit (so the client thinks it failed), the transaction might get performed twice.
+- If the error is due to overload, retrying the transaction will make the problem worse, not better. To avoid such feedback cycles, you can limit the number of retries, use exponential backoff, and handle overload-related errors differently from other errors (if possible)
+- It is only worth retrying after transient errors (for example due to deadlock, isolation violation, temporary network interruptions, and failover); when the error is **permanent** (eg. constraint violation), retrying would be pointless.
