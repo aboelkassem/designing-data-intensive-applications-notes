@@ -104,8 +104,60 @@ distributed datastores abandoned multi-object transactions because they are diff
 
 Leaderless replicated datastores won't undo something it has already done, so it's the application's responsibility to recover from errors.
 
-Retrying aborted transactions isn't prefect 
+Retrying aborted transactions isn't perfect 
 
 - because If the transaction actually succeeded but the network failed while the server is trying to acknowledge the successful commit (so the client thinks it failed), the transaction might get performed twice.
 - If the error is due to overload, retrying the transaction will make the problem worse, not better. To avoid such feedback cycles, you can limit the number of retries, use exponential backoff, and handle overload-related errors differently from other errors (if possible)
 - It is only worth retrying after transient errors (for example due to deadlock, isolation violation, temporary network interruptions, and failover); when the error is **permanent** (eg. constraint violation), retrying would be pointless.
+
+## Weak Isolation Levels
+
+Concurrency issues (race conditions) only come into play when one transaction reads data that is concurrently modified by another transaction, or when two transactions try to simultaneously modify the same data.
+
+**Serializable** isolation means that the database guarantees that transactions have the same effect as if they ran **serially** (i.e., one at a time, without any concurrency).
+
+Concurrency bugs are hard to find by testing, for that, databases have long tried to hide it by providing *transaction isolation*, especially *serializable isolation*. However, due to its performance cost, systems use weaker levels of isolations more commonly, which protect against ***some* concurrency** issues, but not all. Many popular relational databases that are considered "ACID" use **weak isolation** themselves.
+
+### Read Committed
+
+The most basic level of transaction isolation is read committed.v It makes two guarantees:
+
+- When reading from the database, you will only see data that has been **committed (no dirty reads).**
+- When writing to the database, you will only **overwrite** data that has been **committed** **(no dirty writes)**
+
+**No dirty reads**
+
+Imagine a transaction has written some data to the database, but the transaction has not yet committed or aborted. Can another transaction see that uncommitted data? If yes, that is called a **dirty read**
+
+The following example prevents dirty reads
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/read-committed-example.png" width="700" hight="500"/>
+</p>
+
+**No dirty writes**
+
+**Dirty writes** is when a transaction write overwrites another transaction's uncommitted write, this is useful because if the transaction updates multiple objects, dirty writes can lead to bad outcome, however, preventing it still doesn't prevent some other race conditions. Most databases prevents dirty writes by using row-level locks.
+
+The following example shows dirty writes
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/dirty-writes-example-1.png" width="700" hight="500"/>
+</p>
+
+The following example shows it still doesn’t prevent race conditions which that the second transaction happened after first one has committed (which means that there are no dirty writes) but still incorrect behavior. in “Preventing Lost Updates” we will discuss how to make such counter increments safe.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/dirty-writes-example-2.png" width="700" hight="500"/>
+</p>
+
+**How to implement it?**
+
+Read committed is a very popular isolation level. It is the default setting in Oracle 11g, PostgreSQL, SQL Server 2012, MemSQL, and many other databases.
+
+- **To Prevent Dirty Writes**
+    - Transaction acquire write lock (exclusive)
+- **To Prevent Dirty Reads**
+    - Acquire write lock and immediately release it. This would ensure that a read couldn’t happen while an object has a dirty, uncommitted value (because during that time the lock would be held by the transaction that has made the write)
+        - The issue with this approach that may write transaction can take long time and hold the other reads to wait the writers to finish.
+    - Another approach that most databases do is keeps 2 versions of each object value (**committed** and **overwritteen-but-not-yet-committed**) like the image in preventing dirty reads.
