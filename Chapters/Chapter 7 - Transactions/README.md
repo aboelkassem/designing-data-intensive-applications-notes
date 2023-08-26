@@ -161,3 +161,39 @@ Read committed is a very popular isolation level. It is the default setting in O
     - Acquire write lock and immediately release it. This would ensure that a read couldn’t happen while an object has a dirty, uncommitted value (because during that time the lock would be held by the transaction that has made the write)
         - The issue with this approach that may write transaction can take long time and hold the other reads to wait the writers to finish.
     - Another approach that most databases do is keeps 2 versions of each object value (**committed** and **overwritteen-but-not-yet-committed**) like the image in preventing dirty reads.
+
+### Snapshot Isolation (Repeatable Read)
+
+Read committed isolation doesn't protect against **read skew**, where a transaction reads different parts from the database in different points of time.
+
+The following example explain **Read skew (non repeatable read)** problem which shows that Alice do transfer transaction between her two accounts. but when she see the two lists at the same time, she seen inconsistent state (one still with 500$ and the other account with 400$ so the total is $900 in her accounts—it seems that $100 has vanished into thin air)
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/snapshot-isolation-example-1.png" width="700" hight="500"/>
+</p>
+
+Other examples for Read skew (non repeatable read) problem:
+
+- **Taking Backups**: Taking a backup requires making a copy of the entire database, which may take hours on a large database. During the time that the backup process is running, writes will continue to be made to the database. Thus, you could end up with some parts of the backup containing an older version of the data, and other parts containing a newer version. If you need to restore from such a backup, the inconsistencies (such as disappearing money) become permanent
+- **Executing Analytics query**
+- **Doing integrity checks**
+
+Snapshot isolation is the most common solution to this problem, where each transaction reads from a consistent snapshot of the database (only committed data at the beginning of transaction), as if it was frozen at a particular point in time.
+
+Snapshot isolation is useful for read only queries like backups and analytics. this popular features is supported by PostgreSQL, MySQL with the InnoDB storage engine, Oracle, SQL Server, and others.
+
+### Implementing snapshot isolation
+
+By using write locks and reads do not require any locks.  From a performance point of view, a key principle of snapshot isolation is **readers never block writers, and writers never block readers**.
+
+Implemented by **Multi-version concurrency control (MVCC)** meaning that each object in the database has multi version, because various in-progress transactions may need to see the state of the database at different points in time. When another transaction need to read it will return the data of with version number at this timestamp.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/snapshot-isolation-example-2.png" width="700" hight="500"/>
+</p>
+
+In the above diagram there are two transactions initiated by previous transactions 5 and 3. In any writes the database keep multiple versions of the object according to the transactions. When transaction 12 try again to read the value it will find there two version (one caused by previous transaction 5 and one caused by transaction 13 which happened after me, so it will take any transaction happened before me) 
+
+At some later time, when it is certain that no transaction can any longer access the deleted data, a garbage collection process in the database **removes** any rows marked for deletion and frees their space.
+
+Indexing might sound like a problem for snapshot isolation, but one solution is to have the index point to *all* versions of an object, while another approach (used in CouchDB) is to use an append-only/copy-on-write variant that doesn't overwrite pages in the underlying tree.
