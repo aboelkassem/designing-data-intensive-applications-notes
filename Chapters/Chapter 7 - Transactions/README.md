@@ -254,3 +254,71 @@ This can be fixed only through
 The writes skew always read first then write, Phantom is where a write in one transaction changes the result of a search query in another transaction.
 
 **Phantom reads** occurs when, in the course of a transaction, new rows are added or removed by another transaction to the records being read, and there is no way to put locks on rows that might not be existing yet. This can be solved using *materialized conflicts* which is more like an artificial lock to the database. But, **serializable isolation** is always preferred over this approach.
+
+### Serializability
+
+The strongest isolation level that guarantees that even though transactions may execute in parallel, the end result is the same as if they had executed one at a time, **serially**. which the database prevents all possible race conditions.
+
+We can implement serializability in three different ways
+
+- Actual/True Serial Execution
+- Two Phase Locking (2PL)
+- Serializable Snapshot Isolation (SSI)
+
+### **Actual Serial Execution (one thread)**
+
+The easiest is **actual serial execution**, which to actually execute **only one transaction at a time** on a single thread. This approach wasn't feasible until recently, as RAM become more cheaper, and database designers realized OLTP transactions usually makes a small number of reads and writes (in contrast with log-running analytical queries that should use snapshot isolation). Single thread execution can sometimes perform better than concurrent systems, however, the throughput is limited to single CPU.
+
+To enhance the performance of serial executions, the application must submit the entire transaction code ahead of time as a *stored procedure*, which makes the performance reasonable, especially for databases with general-purpose programming languages. Partitioning can still be used with serial executions, especially when most transactions only uses one partition.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/actual-serial-execution.png" width="700" hight="500"/>
+</p>
+
+**Pros and cons of stored procedures**
+
+- Each database vendor has its own language for stored procedures (Oracle has PL/ SQL, SQL Server has T-SQL, PostgreSQL has PL/pgSQL, etc.). These languages haven’t kept up with developments in general-purpose programming languages.
+- Code running in a database is difficult to manage/debug: compared to an application server.
+- A database is often much more performance-sensitive than an application server, because a single database instance is often shared by many application servers. A badly written stored procedure (e.g., using a lot of memory or CPU time) in a database can cause much more trouble than equivalent badly written code in an application server.
+
+However, those issues can be overcome. Modern implementations of stored procedures have abandoned PL/SQL and use existing general-purpose programming languages instead: VoltDB uses Java or Groovy, Datomic uses Java or Clojure, and Redis uses Lua.
+
+VoltDB also uses stored procedures for replication: instead of copying a transaction’s writes from one node to another, it executes the same stored procedure on each rep‐ lica. VoltDB therefore requires that stored procedures are **deterministic** (when run on different nodes, they must produce the same result). If a transaction needs to use the current date and time, for example, it must do so through special deterministic APIs.
+
+### Two-Phase Locking (2PL)
+
+**Two Phase Locking** is similar to dirty writes, but with more stronger requirements on the lock.
+
+Also called **pessimistic concurrency** control mechanism: it is based on the principle that if anything might possibly go wrong (as indicated by a lock held by another transaction), it’s better to wait until the situation is safe again before doing anything.
+
+If A has read an object and B wants to write to that object
+
+- B must wait until A commits or aborts
+    - B can’t change the object unexpectedly behind A’s back
+
+If A has written an object and Transaction B wants to read it
+
+- B must wait until A commits or aborts
+    - This prevents reading an old version of the object
+
+So writers block both other writers and readers, and vice versa. 2PL is used by the serializable isolation level in MySQL (InnoDB) and SQL Server.
+
+Two modes of locks are provided, *shared lock* for **readers**, and *exclusive lock* for **writes**. Deadlocks might result from multiple transaction holding locks, then the database automatically detects **deadlocks** and aborts one of the transactions.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/2pl-1.png" width="700" hight="500"/>
+</p>
+
+The big downside of two-phase locking is the **performance**, which is much worse compared to weak isolation, also it can have unstable latencies, and can be very slow at high percentiles due to the overhead of acquiring and releasing all those lock.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%207%20-%20Transactions/images/2pl-2.png" width="700" hight="500"/>
+</p>
+
+### Serializable Snapshot Isolation (SSI)
+
+This algorithm have the best performance to achieve serializability compared to previous algorithms and adds small performance penalty to Snapshot isolation. It fairly new: it was first described in 2008.
+
+SSI is **optimistic** concurrency control which instead of blocking if something potentially dangerous happens, transactions continue anyway, in the hope that everything will turn out all right. When a transaction wants to commit, the database **checks** whether anything bad happened will aborted or retried.
+
+This is the main difference compared to earlier optimistic concurrency control techniques. On top of snapshot isolation, SSI adds an algorithm for detecting serialization conflicts among writes and determining which transactions to abort.
