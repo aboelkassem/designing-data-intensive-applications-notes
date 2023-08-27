@@ -1,7 +1,27 @@
 ## Chapter 7: Transactions
+## Table of Content (TOC)
+- [Things that will go wrong with your application!](#things-that-will-go-wrong-with-your-application)
+- [The Slippery Concept of a Transaction](#the-slippery-concept-of-a-transaction)
+- [ACID](#acid)
+  * [Atomicity](#atomicity)
+  * [Consistency](#consistency)
+  * [Isolation](#isolation)
+  * [Durability](#durability)
+- [BASE](#base)
+- [Weak Isolation Levels](#weak-isolation-levels)
+  * [Read Committed](#read-committed)
+  * [Snapshot Isolation (Repeatable Read)](#snapshot-isolation--repeatable-read-)
+  * [Implementing snapshot isolation](#implementing-snapshot-isolation)
+  * [Preventing Lost Updates](#preventing-lost-updates)
+  * [Write Skew](#write-skew)
+  * [Phantoms](#phantoms)
+  * [Serializability](#serializability)
+  * [**Actual Serial Execution (one thread)**](#--actual-serial-execution--one-thread---)
+  * [Two-Phase Locking (2PL)](#two-phase-locking--2pl-)
+  * [Serializable Snapshot Isolation (SSI)](#serializable-snapshot-isolation--ssi-)
 
-## Things that will go wrong with your application!
 
+## Things that will go wrong with your application
 - The application or database will fail in the middle of a write operation
 - Interruptions in the network will cut off the application from the database
 - Several clients will write/read to the database at the same time, overwriting each other’s changes
