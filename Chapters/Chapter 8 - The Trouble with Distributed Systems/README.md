@@ -4,7 +4,7 @@
   * [Unreliable Networks](#unreliable-networks)
     + [Timeouts and Unbounded Delays](#timeouts-and-unbounded-delays)
     + [**Unreliable Clocks**](#unreliable-clocks)
-    + [**Knowledge, Truth, and Lies**](#knowledge-truth-and-lies)
+    + [**Knowledge, Truth, and Lies**](#user-content-knowledge-truth-and-lies)
 
 
 Working with distributed systems is fundamentally different from writing software on a single computer and the main difference is that there are lots of new and excit‐ ing ways for things to go wrong.
