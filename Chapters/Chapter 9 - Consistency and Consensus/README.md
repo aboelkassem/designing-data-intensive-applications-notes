@@ -180,3 +180,60 @@ The above guarantee linearizable writes not reads. To make reads linearizable, t
 **Implementing total order broadcast using linearizable storage**
 
 The algorithm is simple: for every message you want to send through total order broadcast, you increment-and-get the linearizable integer, and then attach the value you got from the register as a sequence number to the message. You can then send the message to all nodes (resending any lost messages), and the recipients will deliver the messages consecutively by sequence number.
+
+## Distributed Transactions and Consensus
+
+Consensus is one of the most important and fundamental problems in distributed computing. On the surface, it seems simple: informally, the goal is simply to **get several nodes to agree on something**. You might think that this shouldn’t be too hard. Unfortunately, many broken systems have been built in the mistaken belief that this problem is easy to solve.
+
+Important situations we need the nodes to agree.
+
+- **Leader Election**: all nodes need to agree on which node is the leader. The leadership position might become contested if some nodes can’t communicate with others due to a network fault. So split brain problem happen in which two nodes believe themselves to be the leader.
+- **Atomic Commit**: In database supports transactions over several nodes or partitions, we have the problem that a transaction may fail on some nodes but succeed on others. we have to get all nodes to agree on the outcome of the transaction.
+
+### Atomic Commit and Two-Phase Commit (2PC)
+
+the most common way of solving atomic commit and which is implemented in various databases, messaging systems, and application servers. It turns out that 2PC is a kind of consensus algorithm but not a very good one (we will discuss later other consensus algorithms used in ZooKeeper and etcd).
+
+Atomic commit is easy on a single node and implemented by default by storage engine, as it just depends on the order in which data is durably written to disk.
+
+but it's quite challenging when performed across multiple nodes involved in a transaction (multi-object transaction in partitioned database), as it's not sufficient to send a commit request to all nodes independently. Most NoSQL datastores don't support such transactions, but various relational systems do. 
+
+If some nodes commit the transaction but others abort it, the nodes become inconsistent with each other. A transaction commit must be irrevocable—you are not allowed to change your mind and retroactively abort a transaction after it has been committed. The reason for this rule is that once data has been committed, it becomes visible to other transactions, and thus other clients may start relying on that data.
+
+Two-phase commit is an algorithm for achieving atomic transaction commit across multiple nodes to ensure that either all nodes commit or all nodes abort.
+
+2PC is used internally in some databases, Java Transaction API and WSAtomicTransaction for SOAP web services.
+
+The 2PC protocol contains two crucial points of "no return", when a participant votes yes in the *prepare* phase, and when the coordinator decides the decision. The decision is irrevocable, but could be undone by another *compensating transaction*.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus/images/two-phase-commit.png" width="700" hight="500"/>
+</p>
+
+Coordinator is often implemented as a library within the same application process that is requesting the transaction (e.g., embedded in a Java EE container), but it can also be a separate process or service. Examples of such coordinators include Narayana, JOTM, BTM, or MSDTC.
+
+A 2PC transaction begins with the application reading and writing data on multiple database nodes, as normal. We call these database nodes participants in the transaction. When the application is ready to commit, the coordinator begins phase 1: it sends a prepare request to each of the nodes, asking them whether they are able to commit. The coordinator then tracks the responses from the participants:
+
+- If all participants reply “yes,” indicating they are ready to commit, then the coordinator sends out a commit request in phase 2, and the commit actually takes place.
+- If any of the participants replies “no,” the coordinator sends an abort request to all nodes in phase 2.
+
+The steps in more details
+
+- When the application wants to begin a distributed transaction, it requests a transaction ID from the coordinator.
+- App start single-node transaction in each node with transaction ID, all reads and writes are done. If any failure happened, the coordinator abort transaction
+- When application is ready to commit, coordinator sends prepare request to all participants.
+- When a participant receives the prepare request, it makes sure that it can definitely commit the transaction under all circumstances. This includes writing all transaction data to disk any conflicts or constraint violations.
+- When the coordinator has received responses to all prepare requests, it makes a definitive decision on whether to commit or abort the transaction (committing only if all participants voted “yes”).
+- Once the coordinator’s decision has been written to disk, the commit or abort request is sent to all participants. If this request fails or times out, the coordinator must retry forever until it succeeds.
+
+**Coordinator failure**
+
+If the coordinator fails before sending the prepare requests, a participant can safely abort the transaction. But once the participant has received a prepare request and voted “yes,” it can no longer abort, it must wait to hear back from the coordinator whether the transaction was committed or aborted. If the coordinator crashes or the network fails at this point, the participant can do nothing but wait. A participant’s transaction in this state is called in doubt or uncertain.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus/images/coordinator-failure.png" width="700" hight="500"/>
+</p>
+
+The coordinator crashes after participants vote “yes.” Database 1 does not know whether to commit or abort. Without hearing from the coordinator, the participant has no way of knowing whether to commit or abort. In principle, the participants could communicate among themselves to find out how each participant voted and come to some agreement, but that is not part of the 2PC protocol.
+
+A 3PC algorithm can solve this issue in theory but not in practice.
