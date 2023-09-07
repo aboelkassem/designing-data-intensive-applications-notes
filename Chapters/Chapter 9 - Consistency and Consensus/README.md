@@ -56,3 +56,24 @@ If the current value of the register x equals V*old,* it should be atomically se
 </p>
 
 It's possible to test whether a system is linearizable by recording the timings of all requests and responses and check whether they are sequential.
+
+### Linearizability VS Serializability
+
+- **Serializability** is an **isolation guarantee property** of transactions, where every transaction may read and write multiple objects concurrent. Executed in **some** serial order.
+- **Linearizability** is a **recency guarantee** on reads and writes of a register.
+
+A database may provide both serializability and linearizability, and this combination is known as **strict serializability**.
+
+Implementations of serializability based on **two-phase locking** or **actual serial execution** are **typically linearizable**. While serializable **snapshot isolation** is **not linearizable**.
+
+### When need to rely on Linearizability?
+
+- **Locking and leader election**: Make sure that only one leader is elected by using a lock. To make system linearizability, ZooKeeper used to implement distributed locks and leader election by using consensus algorithms.
+- **Constraints and uniqueness guarantees**: Uniqueness constraints in database (such as username or email, if two people try to concurrently create a user or a file with the same name, one of them will be returned an error) should be linearizability. To implement it **add lock** on their chosen username or by compare-and-set **CAS(username, empty, newUserName)**.
+    - Another examples that make sure that a bank account balance never goes negative, or that you don’t sell more items than you have in stock in the warehouse, or that two people don’t concurrently book the same seat on a flight or in a theater.
+- **Cross-channel timing dependencie**s: if the system uses two different communication channels depending on each other. The system should be Linearizability to prevent race conditions.
+    - For the following examples shows two different communication channels (web server and image resizer) If the file storage service is linearizable, then this system should work fine. If it is not linearizable, there is the risk of a race condition: the message queue (steps 3 and 4) might be faster than the internal replication inside the storage service. In this case, when the resizer fetches the image (step 5), it might see an old version of the image, or nothing at all.
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus/images/cross-channel-example.png" width="700" hight="500"/>
+    </p>
