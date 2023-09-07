@@ -237,3 +237,69 @@ If the coordinator fails before sending the prepare requests, a participant can 
 The coordinator crashes after participants vote “yes.” Database 1 does not know whether to commit or abort. Without hearing from the coordinator, the participant has no way of knowing whether to commit or abort. In principle, the participants could communicate among themselves to find out how each participant voted and come to some agreement, but that is not part of the 2PC protocol.
 
 A 3PC algorithm can solve this issue in theory but not in practice.
+
+
+### Distributed Transactions in Practice
+
+Some implementations of distributed transactions carry a heavy performance penalty for example, distributed transactions in MySQL are reported to be over 10 times slower than single-node transactions, so it is not surprising when people advise against using them. Much of the performance cost inherent in two-phase commit is due to the additional disk forcing (fsync) that is required for crash recovery, and the additional network round-trips.
+
+Two types of distributed transactions
+
+- **Database-internal distributed transactions**: Some distributed databases (i.e., databases that use replication and partitioning in their standard configuration) support internal transactions among the nodes of that database. For example, VoltDB and MySQL Cluster’s NDB storage engine have such internal transaction support. In this case, all the nodes participating in the transaction are running the same database software.
+- **Heterogeneous distributed transactions**: In a heterogeneous transaction, the participants are two or more different technologies: for example, two databases from different vendors, or even nondatabase systems such as message brokers. A distributed transaction across these systems must ensure atomic commit, even though the systems may be entirely different under the hood.
+
+Database internal apply optimizations since uses the same database software.  
+
+**Exactly-once message processing**
+
+Heterogeneous distributed transactions allow diverse systems to be integrated in powerful ways. For example, a message from a message queue can be acknowledged as processed if and only if the **database transaction** for processing the message was successfully **committed**. 
+
+The side effect of using message broker may safely redeliver the message later if transaction failed and this ensure that the message is **effectively processed exactly once**.
+
+**XA transactions**
+
+X/Open XA (short for eXtended Architecture) is a standard for implementing two-phase commit (2PC) across heterogeneous technologies. XA is supported by many traditional relational databases (including PostgreSQL, MySQL, DB2, SQL Server, and Oracle) and message brokers (including ActiveMQ, HornetQ, MSMQ, and IBM MQ).
+
+XA is not a network protocol—it is merely a C API for interfacing with a transaction coordinator. The transaction coordinator implements the XA API as a client library. It keeps track of the participants in a transaction, collects partipants’ responses after asking them to prepare (via a callback), and uses a **log on the local disk** to keep track of the commit/abort decision for each transaction.
+
+**Holding locks while in doubt**
+
+The database cannot release those locks until the transaction commits or aborts. Therefore, when using two-phase commit a transaction must hold onto the locks throughout the time it is in doubt. If the coordinator has crashed and takes 20 minutes to start up again, those locks will be held for 20 minutes. If the coordinator’s log is entirely lost for some reason, those locks will be held forever—or at least until the situation is manually resolved by an administrator.
+
+The problem with transaction that is stuck waiting for coordinator, is that it **cannot release the locks it's holding**, which can cause larger parts of the application to become unavailable. This can be fixed by either **a human manual interaction**, or using **an automated heuristic decisions.**
+
+**Limitations of distributed transactions**
+
+XA transactions solve the real and important problem of keeping several participant data systems consistent with each other, but as we have seen, they also introduce major operational problems.
+
+- If the coordinator is not replicated but runs only on a single machine, it is a single point of failure for the entire system
+- Many server-side applications are developed in a stateless model with all persistent state stored in a database, which has the advantage that application servers can be added and removed at will. However, when the coordinator is part of the application server, it changes the nature of the deployment. Suddenly, the coordinator’s logs become a crucial part of the durable system state—as important as the databases themselves, since the coordinator logs are required in order to recover in-doubt transactions after a crash. Such application servers are no longer stateless.
+- Since XA needs to be compatible with a wide range of data systems, it is necessarily a lowest common denominator. For example, it cannot detect deadlocks across different systems
+- For database-internal distributed transactions (not XA), the limitations are not so great—for example, a distributed version of SSI is possible.
+
+There are alternative methods that allow us to achieve the same thing without the pain of heterogeneous distributed transactions. We will return to these in Chapters 11 and 12.
+
+Consensus algorithm in a formalized form should satisfy 4 properties: all nodes should agree on the same decision, no node decides twice, if a node decides a value, then the value must have been proposed by some node, and every non-crashed node should eventually decide some value. However, for the last property to be guaranteed, the algorithm requires at least the majority of the nodes to be functioning correctly.
+
+The best known fault-tolerance consensus algorithms are Viewstamped Replication, Paxos, Raft, and Zab. All of them (except Paxos) implement total order broadcast directly, as total order broadcast is equivalent to repeated rounds of consensus.
+
+All consensus protocols use a leader internally, but don't guarantee the leader uniqueness, instead a weaker guarantee is to only guarantee the leader uniqueness within each **epoch** (lifetime of a leader). Thus, we end-up having two round of voting, once to choose a leader, and a second to vote on leader's proposal.
+
+Some limitations of consensus algorithms include: it requires a strict majority to operate, it assumes a fixed set of nodes to participate in voting, it generally relies on timeouts to detect failed nodes, and it's sensitive to network problems.
+
+### Membership and Coordination Services
+
+Projects like ZooKeeper or etcd are often described as “distributed key-value stores” or “coordination and configuration services.” The API of such a service looks pretty much like that of a database: you can read and write the value for a given key, and iterate over keys. So if they’re basically databases, why do they go to all the effort of implementing a consensus algorithm? What makes them different from any other kind of database?
+
+As an application developer, you will **rarely** need to use ZooKeeper directly, because it is actually not well suited as a general-purpose database. It is more likely that you will end up relying on it **indirectly** via some other project: for example, HBase, Hadoop YARN, OpenStack Nova, and Kafka all rely on ZooKeeper running in the background.
+
+ZooKeeper and etcd are designed to hold small amounts of data that can fit entirely in memory.  That small amount of data is replicated across all the nodes using a fault-tolerant total order broadcast algorithm. 
+
+ZooKeeper is modeled after Google’s Chubby lock service implementing not only total order broadcast but also an interesting set of other features that turn out to be particularly useful when building distributed systems like:
+
+- **Linearizable atomic operations**: Using an atomic compare-and-set operation, you can implement a lock if several nodes concurrently try to perform the same operation, only one of them will succeed.
+- **Total ordering of operations**: when some resource is protected by a lock or lease, you need a **fencing token** to prevent clients from conflicting with each other in the case of a process pause. The fencing token is some number that monotonically increases every time the lock is acquired. ZooKeeper provides this by totally ordering all operations and giving each operation a monotonically increasing transaction ID (zxid) and version number (cversion)
+- **Failure detection**: Clients maintain a long-lived session on ZooKeeper servers, and the client and server periodically exchange heartbeats to check that the other node is still alive. Even if the connection is temporarily interrupted, or a ZooKeeper node fails, the session remains active. However, if the heartbeats end for a duration that is longer than the session timeout, ZooKeeper declares the session to be dead. Any locks held by a session can be configured to be automatically released when the session times out
+- **Change notifications**:  Not only can one client read locks and values that were created by another client, but it can also watch them for changes. Thus, a client can find out when another client joins the cluster  or if another client fails. By subscribing to notifications, a client avoids having to frequently poll to find out about changes.
+
+Also, ZooKeeper, etcd, and Consul are also often used for **service discovery** that is, to find out which IP address you need to connect to in order to reach a particular service.  However, it is less clear whether service discovery actually requires consensus. **DNS** is the traditional way of looking up the IP address for a service name, and it uses multiple layers of caching to achieve good performance and availability.
