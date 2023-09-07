@@ -132,3 +132,51 @@ A system can be causally consistent without incurring the performance hit of mak
 Researchers are exploring new kinds of databases that preserve causality, with performance and availability characteristics that are similar to those of eventually consistent systems.
 
 Causal consistency needs to track causal dependencies across the entire database, not just for a single key, so *version vectors* can be used for that. However, keeping track of all dependencies can become impractical, so a better way could be to use ***sequence numbers* or *timestamps*** (from a logical clock) to order events instead. These numbers are compact and provide a total order.
+
+
+### Sequence Number Ordering
+
+In a database with single-leader replication, the replication log defines a total order of write operations that is consistent with causality. The leader can simply increment a counter for each operation, and thus assign a monotonically increasing sequence number to each operation in the replication log. If a follower applies the writes in the order they appear in the replication log, the state of the follower is always causally consistent (even if it is lagging behind the leader).
+
+The best known way of generating *sequence numbers* for causal consistency is **Lamport timestamps**, where every node and every client keeps track of the *maximum* counter value it has seen so far, and includes that maximum on every request. When a node receives a request or response with a maximum counter value greater than its own counter value, it immediately increases its own counter to that maximum.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus/images/total-order-broadcast.png" width="700" hight="500"/>
+</p>
+
+As long as the maximum counter value is carried along with every operation, this scheme ensures that the ordering from the Lamport timestamps is consistent with causality, because every causal dependency results in an increased timestamp.
+
+The advantage of Lamport timestamps over version vectors is that they are more compact. The difference between Lamport timestamps and version vectors, is that version vectors can distinguish whether two operations are concurrent or weather one is causally dependent on the other, whereas Lamport timestamps always enforce total ordering. Lamport timestamps are more compact, but we cannot use it to tell whether two operations are concurrent or casually dependent.
+
+In order to use total ordering between multiple nodes, we should use ***total order broadcast***,  which is a message exchanging protocol that guarantees reliability (no messages are lost), and total ordered delivery of messages to all nodes.
+
+**Consensus services such as ZooKeeper** and etcd actually implement total order broadcast. This fact is a hint that there is a strong connection between total order broadcast and consensus, which we will explore later in this chapter.
+
+**Total order broadcast** is exactly what you need for database replication: if every message represents a write to the database, and every replica processes the same writes in the same order, then the replicas will remain consistent with each other (aside from any temporary replication lag). This principle is known as **state machine replication.**
+
+An important aspect of total order broadcast is that the order is fixed at the time the messages are delivered: a node is not allowed to retroactively insert a message into an earlier position in the order if subsequent messages have already been delivered. This fact makes total order broadcast stronger than timestamp ordering
+
+Total order broadcast is used in database replication, serializable transactions, creating messages log, and lock for fencing tokens.
+
+**Implementing linearizable storage using total order broadcast**
+
+Total order broadcast is asynchronous: messages are guaranteed to be delivered reliably in a fixed order, but there is no guarantee about when a message will be delivered (so one recipient may lag behind the others). By contrast, linearizability is a **recency guarantee**: a read is guaranteed to see the latest value written.
+
+You can build linearizable storage on top of it. For example, you can ensure that usernames uniquely identify user accounts. 
+
+You can Implement it using atomic **compare-and-set operation**. Every register initially has the value **null** and when a user wants to create a username, you execute a compare-and-set operation on the register for that username, setting it to the user account ID.
+
+You can implement it by using total order broadcast using append-only log:
+
+- Append a message to log indicating the username
+- Read the log and wait for the message you appended to be delivered back to you
+- Check for any messages claiming the username that you want. If the first message for your desired username is your own message, then you are successful: you can commit the username claim (perhaps by appending another message to the log) and acknowledge it to the client. If the first message for your desired username is from another user, you abort the operation.
+
+The above guarantee linearizable writes not reads. To make reads linearizable, there are a few options:
+
+- Performing the actual read when the message is delivered back to you.
+- If the log allows you to fetch the position of the latest log message in a linearizable way, you can query that position, wait for all entries up to that position to be delivered to you, and then perform the read.
+
+**Implementing total order broadcast using linearizable storage**
+
+The algorithm is simple: for every message you want to send through total order broadcast, you increment-and-get the linearizable integer, and then attach the value you got from the register as a sequence number to the message. You can then send the message to all nodes (resending any lost messages), and the recipients will deliver the messages consecutively by sequence number.
