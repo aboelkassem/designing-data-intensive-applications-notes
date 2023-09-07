@@ -1,4 +1,19 @@
 # Chapter 9: Consistency and Consensus 
+## Table Of Content (TOC)
+- [Consistency Guarantees](#consistency-guarantees)
+- [Linearizability](#linearizability)
+    + [Linearizability VS Serializability](#linearizability-vs-serializability)
+    + [When need to rely on Linearizability?](#when-need-to-rely-on-linearizability-)
+  * [The CAP theorem](#the-cap-theorem)
+    + [Linearizability and Performance](#linearizability-and-performance)
+    + [Implementing Linearizable Systems](#implementing-linearizable-systems)
+    + [Ordering Guarantees](#ordering-guarantees)
+    + [Sequence Number Ordering](#sequence-number-ordering)
+  * [Distributed Transactions and Consensus](#distributed-transactions-and-consensus)
+    + [Atomic Commit and Two-Phase Commit (2PC)](#atomic-commit-and-two-phase-commit--2pc-)
+    + [Distributed Transactions in Practice](#distributed-transactions-in-practice)
+    + [Membership and Coordination Services](#membership-and-coordination-services)
+
 The simplest way of handling system faults is to simply let the entire system fail, and then show an error message. But, the best way is to have a **general-purpose abstraction** with useful **guarantees** that we can implement.
 
 One of the most important abstractions for distributed systems is **consensus**: that is, getting all of the nodes to agree on something (Like in single leader replication , when leader is dies and we need to fail over another node to be come the leader, the implementation of this **consensus** can prevent problems like if two nodes believe that they are the leader: split brain problem).
