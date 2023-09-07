@@ -77,3 +77,27 @@ Implementations of serializability based on **two-phase locking** or **actual se
     <p align="center" width="100%">
       <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus/images/cross-channel-example.png" width="700" hight="500"/>
     </p>
+
+## The CAP theorem
+
+https://www.ibm.com/topics/cap-theorem
+
+This CAP theorem show that you cannot achieve the 3 principles together into the distributed systems. You can achieve only two of them. 
+
+- CA ⇒ has strong/strict consistency
+- AP ⇒ has eventual consistency
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus/images/cap-theorem.jpeg" width="700" hight="500"/>
+</p>
+
+- CA ⇒ If your application **requires linearizability**, and some replicas are disconnected from the other replicas due to a network problem, then some replicas cannot process requests while they are disconnected: they must either wait until the net‐ work problem is fixed.
+- AP ⇒ If your application does **not require linearizability**, then it can be written in a way that each replica can process requests independently, even if it is disconnected from other replicas (e.g., multi-leader). In this case, the application can remain available in the face of a network problem
+
+Thus, According to CAP theorem, applications that don't require linearizability, can be more tolerant of network problems, because it can remain available in the face of them.
+
+The CAP theorem doesn’t say thing about network delays, dead nodes, or other trade-offs. Thus, although CAP has been historically influential, it has little practical value for designing systems.
+
+### Linearizability and Performance
+
+Although linearizability is a useful guarantee, few systems are actually linearizable in practice, as it is always slow even when there is no network fault, which decreases the performance significantly.
