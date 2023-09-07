@@ -3,7 +3,7 @@
 - [Consistency Guarantees](#consistency-guarantees)
 - [Linearizability](#linearizability)
     + [Linearizability VS Serializability](#linearizability-vs-serializability)
-    + [When need to rely on Linearizability?](#when-need-to-rely-on-linearizability-)
+    + [When need to rely on Linearizability?](#user-content-when-need-to-rely-on-linearizability)
   * [The CAP theorem](#the-cap-theorem)
     + [Linearizability and Performance](#linearizability-and-performance)
     + [Implementing Linearizable Systems](#implementing-linearizable-systems)
