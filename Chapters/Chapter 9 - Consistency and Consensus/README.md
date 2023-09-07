@@ -101,3 +101,34 @@ The CAP theorem doesn’t say thing about network delays, dead nodes, or other t
 ### Linearizability and Performance
 
 Although linearizability is a useful guarantee, few systems are actually linearizable in practice, as it is always slow even when there is no network fault, which decreases the performance significantly.
+
+
+### Implementing Linearizable Systems
+
+We can implement Linearizable in two ways
+
+- **Atomic operations + Single Copy** (Not good one due to tolerate faults): which only one centralized database. If there are several requests waiting to be handled, but the datastore ensures that every request is handled atomically at a single point in time, acting on a single copy of the data, along a single timeline, without any concurrency.
+    - To implement linearizability with fault-tolerance we need either a single-leader replicated system, or to **use consensus algorithms like zookeeper do (like two-phase commit algorithm)**
+- **Two Phase commit**: there is a coordinator tell the replicas that we need to write data, should all replicas reply with Ok, then go into two phases (Prepare and Commit)
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus/images/two-phase-commit.png" width="700" hight="500"/>
+    </p>
+    
+    - Note for confusing: Two Phase commit 2PC (Linearizability) is not Two Phase Locking 2PL (Serializability)
+
+### Ordering Guarantees
+
+**Causality** imposes an ordering on events: cause comes before effect; a message is sent before that message is received; the question comes before the answer.
+
+Ordering helps preserve causality, and a system that obeys the order imposed by causality is called *causally consistent* (eg. snapshot isolation provides causal consistency ). When you read from the database, and you see some piece of data, then you must also be able to see any data that causally precedes it.
+
+Causality uses *partial order*, where concurrent operations may be processed in any order, but non-concurrent operations must be ordered. This is weaker than linearizability which uses *total order*, where it allows any two elements to be compared and ordered.
+
+Any system that is linearizable will preserve causality correctly. Linearizability doesn't have concurrent operations, however, it is one of the ways of **preserving causality**. 
+
+A system can be causally consistent without incurring the performance hit of making it linearizable (CAP theorem doesn’t apply). **Causal consistency is the strongest possible consistency model that doesn't slow down or fail due to network failures or delays**.
+
+Researchers are exploring new kinds of databases that preserve causality, with performance and availability characteristics that are similar to those of eventually consistent systems.
+
+Causal consistency needs to track causal dependencies across the entire database, not just for a single key, so *version vectors* can be used for that. However, keeping track of all dependencies can become impractical, so a better way could be to use ***sequence numbers* or *timestamps*** (from a logical clock) to order events instead. These numbers are compact and provide a total order.
