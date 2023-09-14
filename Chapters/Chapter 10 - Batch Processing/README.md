@@ -110,3 +110,44 @@ The key-value pairs must be sorted, but the dataset is likely too large, Instead
 The reduce task takes the files from the mappers and merges them together, preserving the sort order. Thus, if different mappers produced records with the same key, they will be adjacent in the merged reducer input
 
 MapReduce jobs cannot have any randomness, and the range of problems we can solve with single MapReduce job is limited, so commonly jobs are chained together to form a *workflow* (output of one job becomes the input to the next job), Hadoop MapReduce framework does not have any particular support for workflows, so it done implicitly using directory names.
+
+### Joins in batch processing
+
+Joins are necessary whenever we need to access records on both sides of an association, but MapReduce has no concept of indexes to help in the join operation. it reads the entire content of the file.
+
+For example: analysis of user activity events, On the left is a log of events and on the right is a database of users.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2010%20-%20Batch%20Processing/images/batch-processing-example.png" width="700" hight="500"/>
+</p>
+
+To do joins is to query the file needed for join over the network (go over the activity events one by  one and query the user database (on a remote server) for every user ID), however such an approach is most likely to suffer from poor performance, and also can lead to inconsistency if the data changes over the time of round-trip for remote database. So, a better approach would be to clone the other database into the distributed system (using ETL (Extract, Transform, Load) process).
+
+**Sort-merge joins**
+
+Now, we have in the distributed filesystem user database and user activity records. The mapper will extract a key-value pair for each input from activity events (key = userID, value= activity event) and from user database (key = userId, value = user’s data like birth of data)
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2010%20-%20Batch%20Processing/images/batch-processing-map-reduce.png" width="700" hight="500"/>
+</p>
+
+MapReduce partitions the mapper output by key and then sorts it to become adjacent to each other in the reducer input. The reducer can then perform the actual join logic easily: the reducer function is called once for every user ID. The first value is expected to be the date-of-birth record from the user database and now can get viewers-age-in-years for viewed-url. Reduce jobs could then calculate the distribution of viewer ages for each URL, and cluster by age group.
+
+Since the reducer processes all of the records for a particular user ID in one go, it only needs to keep one user record in memory at any one time, and it never needs to make any requests over the network. This algorithm is known as a **sort-merge join**, since mapper output is sorted by key, and the reducers then merge together the sorted lists of records from both sides of the join.
+
+**Bringing related data together in the same place** like what mappers docs can be a fairly simple, single-threaded piece of code that can churn through records with high throughput and low memory overhead. Besides joins, MapReduce can handle also **grouping** records by some key.
+
+Skewed/hot key can happened in single reducer (for example in social media and celebrity has millions of records). Since a MapReduce job is only complete when all of its mappers and reducers have completed, any subsequent jobs must wait for the slowest reducer to complete before they can start.
+
+To Solve hot keys, When performing the actual join, the mappers send any records relating to a hot key to one of several reducers, chosen at random. 
+
+**Map-Side Joins**
+
+The merge-sort join approach has the advantage that you do not need to make any assumptions about the input data: whatever its properties and structure, the mappers can prepare the data to be ready for joining. However, the downside is that all that sorting, copying to reducers, and merging of reducer inputs can be quite expensive. Depending on the available memory buffers, data may be written to disk several times as it passes through the stages of MapReduce.
+
+if you can make certain assumptions about your input data, it is possible to make joins faster by using a so-called map-side join. This approach uses a cut-down MapReduce job in which there are no reducers and no sorting. Instead, each mapper simply reads one input file block from the distributed filesystem and writes one output file to the filesystem—that is all.
+
+There are two approaches to perform map-side joins
+
+- Broadcast hash joins
+- Partitioned hash joins
