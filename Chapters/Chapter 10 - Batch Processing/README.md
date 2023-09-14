@@ -63,3 +63,50 @@ The good thing is that interface give the a shell user to wire up the input and 
 Reasons that Unix tools are so successful includes that the input files are treated as immutable, we can end the pipeline are any point, and we can write the output of intermediate stages to files for fault-tolerance.
 
 The biggest limitation of Unix tools is that it can only run on a single machine, that's where tools like Hadoop come in.
+
+## MapReduce and Distributed Filesystems
+
+MapReduce is a bit like Unix tools, but distributed across potentially thousands of machines. While Unix tools use stdin and stdout as input and output, MapReduce jobs read and write files on a distributed filesystem. In Hadoop’s implementation called HDFS (Hadoop Distributed File System).
+
+Various other distributed **filesystems** besides HDFS exist, such as GlusterFS and the Quantcast File System (QFS). **Object storage** services such as Amazon S3, Azure Blob Storage, and OpenStack Swift are similar in many ways.
+
+There is two approaches for storing files
+
+- **Network Attached Storage (NAS) and Area Network (SAN) architectures**: implemented by a centralized storage appliance (hardware or Fibre channel).
+- **Shared-Nothing principle (horizontal scaling)**: requires no special hardware, only computers connected by a conventional datacenter network.
+
+HDFS is based on the shared-nothing principle. Which consists of a daemon process running on each machine exposing a network service that allows other nodes to access files stored on that machine. A central server called the **NameNode** keeps track of which file blocks are stored on which machine. In order to tolerate machine and disk failures, file blocks are replicated on multiple machines.
+
+### MapReduce Job Execution
+
+MapReduce is a programming framework with which you can write code to process large datasets in a distributed filesystem like HDFS.  The previous example of Unix log analysis, this how data processing in MapReduce.
+
+1. Read a set of input files, and break it up into records. In the web server log example, each record is one line in the log (that is, \n is the record separator).
+2. Call the **mapper function** to extract a key and value from each input record. In the preceding example, the mapper function is awk '{print $7}': it extracts the URL ($7) as the key, and leaves the value empty.
+3. Sort all of the key-value pairs by key. In the log example, this is done by the first sort command.
+4. Call the **reducer function** to iterate over the sorted key-value pairs. If there are multiple occurrences of the same key, the sorting has made them adjacent in the list, so it is easy to combine those values without having to keep a lot of state in memory. In the preceding example, the reducer is implemented by the command uniq -c, which counts the number of adjacent records with the same key
+
+Those four steps can be performed by one MapReduce job. Steps 2 (map) and 4 (reduce) are where you write your custom data processing code. Step 1 (breaking files into records) is handled by the input format parser. Step 3, the sort step, is implicit in MapReduce—you don’t have to write it, because the output from the mapper is always sorted before it is given to the reducer.
+
+To create a MapReduce job, you need to implement two callback functions, the mapper and reducer, which behave as follows:
+
+- Mapper: called once for every input record, its job is to extract the key and value from the input record.
+- Reducer: takes the key-value pairs produced by the mappers, collects all the values belonging to the same key, and use them to produce a number of output records.
+
+The role of the mapper is to prepare the data by putting it into a form that is suitable for sorting, and the role of the reducer is to process the data that has been sorted
+
+MapReduce can parallelize a computation across many machines. The mapper and reducer only operate on one record at a time; they don’t need to know where their input is coming from or their output is going to.
+
+The following diagram shows the dataflow in Hadoop MapReduce job. The input is a directory in HDFS and each file is separate **partition** that can be processed by a separate map task (m1, m2, m3)
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2010%20-%20Batch%20Processing/images/map-reduce.png" width="700" hight="500"/>
+</p>
+
+Application code (e.g., JAR files if java application) is run in the map task and the MapReduce framework first copy this code to the appropriate machines, then starts the map task and begins reading the input file, passing one record at a time to the mapper callback. The output of the mapper consists of key-value pairs. 
+
+The key-value pairs must be sorted, but the dataset is likely too large, Instead, the sorting is performed in stages. First, each map task **partitions** its output by reducer, based on the hash of the key. Each of these partitions is written to a sorted file on the mapper’s local disk. The reducers connect to each of the mappers and download the files of sorted key-value pairs for their partition.
+
+The reduce task takes the files from the mappers and merges them together, preserving the sort order. Thus, if different mappers produced records with the same key, they will be adjacent in the merged reducer input
+
+MapReduce jobs cannot have any randomness, and the range of problems we can solve with single MapReduce job is limited, so commonly jobs are chained together to form a *workflow* (output of one job becomes the input to the next job), Hadoop MapReduce framework does not have any particular support for workflows, so it done implicitly using directory names.
