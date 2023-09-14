@@ -1,4 +1,15 @@
 # Chapter 10: Batch Processing
+## Table of content (TOC)
+- [Batch Processing with Unix Tools](#batch-processing-with-unix-tools)
+- [MapReduce and Distributed Filesystems](#mapreduce-and-distributed-filesystems)
+  * [MapReduce Job Execution](#mapreduce-job-execution)
+  * [Joins in batch processing](#joins-in-batch-processing)
+- [The Output of Batch Workflows](#the-output-of-batch-workflows)
+- [Comparing Hadoop to Distributed Databases](#comparing-hadoop-to-distributed-databases)
+- [Beyond MapReduce](#beyond-mapreduce)
+  * [Materialization of Intermediate State](#materialization-of-intermediate-state)
+
+
 All systems can fit into three main categories:
 
 - **Services (online)**, where it waits for requests from a client to arrive, tries to handle them as quickly as possible, and sends back a response.
