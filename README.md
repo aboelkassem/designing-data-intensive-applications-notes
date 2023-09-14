@@ -19,7 +19,7 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 	- [Chapter 8: The Trouble with Distributed Systems](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%208%20-%20The%20Trouble%20with%20Distributed%20Systems)
 	- [Chapter 9: Consistency and Consensus](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus)
 - Part III: Derived Data
-	- Chapter 10: Batch Processing (In Progress)
+	- [Chapter 10: Batch Processing](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%2010%20-%20Batch%20Processing)
 	- Chapter 11: Stream Processing (In Progress)
 	- Chapter 12: The Future of Data Systems (In Progress)
 
