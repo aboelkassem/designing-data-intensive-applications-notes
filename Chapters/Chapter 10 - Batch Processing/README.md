@@ -151,3 +151,67 @@ There are two approaches to perform map-side joins
 
 - Broadcast hash joins
 - Partitioned hash joins
+
+## The Output of Batch Workflows
+
+The output of a batch process is often not a report, but some other kind of structure
+
+**Building search indexes**
+
+Google’s original use of MapReduce was to build indexes for its search engine, which was implemented as a workflow of 5 to 10 MapReduce jobs. They moved away for it for this purpose. but still Hadoop MapReduce remains a good way of building indexes for Lucene/Solr.
+
+If you need to perform a full-text search over a **fixed set of documents**, then a batch process is a very effective way of building the indexes: the mappers partition the set of documents as needed, each reducer builds the index for its partition, and the index files are written to the distributed filesystem. This will make query parallelizes very well.
+
+Another common use for batch processing is to build machine learning systems such as classifiers (e.g., spam filters, anomaly detection, image recognition) and recommendation systems. The output of those batch jobs is often some kind of database: for example, a database that can be queried by user ID to obtain suggested friends for that user, or a database that can be queried by product ID to get a list of related products
+
+These databases need to be queried from the web application that handles user requests, which is usually separate from the Hadoop infrastructure. So how does the output from the batch process get back into a database where the web application can query it?
+
+A much better solution is to build a brand-new **database inside** the batch job and write it as **files** to the job’s output directory in the distributed filesystem and can be loaded in bulk into servers that handle read-only queries. Various key-value stores support building database files in MapReduce jobs, including Voldemort, Terrapin, ElephantDB, and HBase bulk loading.
+
+When loading data into Voldemort, the server continues serving requests to the old data files while the new data files are copied from the distributed filesystem to the server’s local disk. Once the copying is complete, the server atomically switches over to querying the new files. If anything goes wrong in this process, it can easily switch back to the old files again.
+
+The Unix-like philosophy in MapReduce has many advantages, as we can simply rollback any changes with the guarantee of the producing the same output when the job runs again, feature development can proceed more quickly, it transparently retries failed tasks without affecting the application logic, it provides a separation of concerns, and the same set of files can be used as inputs for different jobs.
+
+## Comparing Hadoop to Distributed Databases
+
+Hadoop is somewhat like a distributed version of Unix, where HDFS is the filesystem and MapReduce is a quirky implementation of a Unix process.
+
+Hadoop has often been used for implementing ETL processes, MapReduce jobs are written to clean up that data, transform it into a relational form, and import it into an MPP data warehouse for analytic purposes.
+
+Database
+
+- Require you to structure data according to a particular model
+- monolithic, tightly integrated pieces of software that take care of storage layout on disk, query planning, scheduling, and execution.
+- If a node crashes while a query is executing, most MPP databases abort the entire query, and either let the user resubmit the query
+
+Hadoop
+
+- Distributed filesystem are just byte sequences
+- Batch processes are less sensitive to faults than online systems, because they do not immediately affect users if they fail and they can always be run again.
+- Can tolerate the failure of a map or reduce task without it affecting the job as a whole by retrying work at the granularity of an individual task.
+
+SQL query language allows expressive queries and elegant semantics without the need to write code. not all kinds of processing can be sensibly expressed as SQL queries. For example, if you are building machine learning and recommendation systems, or full-text search indexes. These kinds of processing are often very specific to a particular application (e.g., feature engineering for machine learning, natural language models for machine translation, risk estimation functions for fraud prediction), so they inevitably require writing code, not just queries.
+
+MapReduce gave engineers the ability to easily run their own code over large datasets. If you have HDFS and MapReduce, you can build a SQL query execution engine on top of it.
+
+## Beyond MapReduce
+
+Various higher-level programming models (Pig, Hive, Cascading, Crunch) were created as abstractions on top of MapReduce. MapReduce is very robust: can process large quantities of data for multi-tenant system and will get the job done (but slowly and poor performance). Other tools are sometimes orders of magnitude faster for some kinds of processing.
+
+### Materialization of Intermediate State
+
+Intermediate state: is when you know the output of one job is only ever used as input to one other job which maintained by the same team. In the complex workflows used to build recommendation systems consisting of 50 or 100 MapReduce jobs there is a lot of such intermediate state.
+
+MapReduce's approach is fully materialized, which means to eagerly compute results of some operations and write them out rather than computing them on demand. This prevents any job from starting until all its preceding jobs are completed, mappers are often redundant, and this extra intermediate storage have to be replicated which wastes a lot of resources.
+
+Dataflow engines (eg. **Spark**, Tex, Flink, etc.) fixed MapReduce disadvantages by handling and entire workflow as one job,  rather than small independent sub-jobs. Like MapReduce, they work by repeatedly calling a user-defined function to process one record at a time on a single thread. They parallelize work by partitioning inputs, and they copy the output of one function/operator over the network to become the input to another function/operator. It also provides more flexible callback functions (*operations*) rather than only map and reduce.
+
+This style of processing engine is based on research systems like Dryad and Nephele which can do in-place sorting when required only. there are no unnecessary map tasks, and other advantages.
+
+We can use dataflow engines to implement the same computations as MapReduce, but it executes significantly faster. However, because they dismiss the intermediate materialization, they have to to recompute most of the data when the job fails. However, the re-computation overhead of dataflow engines makes it challenging to use it with small data or CPU-intensive computations, so materialization would be cheaper.
+
+Pregal Processing modal is an an optimization for batch processing graphs it is implemented by Apache Giraph, Spark’s GraphX API, and Flink’s Gelly API. It is also known as the Pregel model.
+
+Higher-level languages and APIs (eg. Hive, Pig) has the advantages of requiring less code, while also allowing interactive use. Moreover, it also improves the job execution efficiency at the machine level.
+
+Batch processing has an increasingly important applications in statistical and numerical algorithms, machine learning, recommendation systems, and computing spatial algorithms as well.
