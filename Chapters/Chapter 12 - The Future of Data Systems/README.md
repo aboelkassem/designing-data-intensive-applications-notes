@@ -63,3 +63,53 @@ dataflow systems can also achieve better performance. For example, say a custome
 - .***In the dataflow approach***, the code that processes purchases would subscribe to a **stream of exchange rate updates** ahead of time, and record the current rate in a local database whenever it changes. When it comes to processing the purchase, it only needs to query the local database.
 
 Not only is the dataflow approach faster, but it is also more robust to the failure of another service. The fastest and most reliable network request is no network request at all! Instead of RPC, we now have a stream join between purchase events and exchange rate update events.
+
+
+### Observing Derived State
+
+The following diagram shows an example of updating a search index when write and read.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2012%20-%20The%20Future%20of%20Data%20Systems/images/update-search-index-example.png" width="700" hight="500"/>
+</p>
+
+HTTP-based feed subscription protocols like RSS are really just a basic form of polling.
+
+More recent protocols have moved beyond the basic request/response pattern of HTTP: server-sent events (the EventSource API) and **WebSockets** provide communication channels by which a web browser can keep an open **TCP connection to a server**, and the server can actively **push messages** to the browser as long as it remains connected. This provides an opportunity for the server to actively inform the enduser client about any changes to the state it has stored locally, reducing the staleness of the client-side state
+
+Recent tools for developing stateful clients and user interfaces, such as the Elm language and Facebook’s toolchain of React, Flux, and Redux, already manage internal client-side state by subscribing to a stream of events representing user input or responses from a server, structured similarly to event sourcing. Some applications, such as instant messaging and online games, already have such a “real-time” architecture
+
+The ideas of stream processing and messaging and not restricted to datacenters, but we can extend them all the way to the end-user devices.
+
+### **Aiming for Correctness**
+
+Transactions have been the choice for building correct applications for more than four decades by now, and while in some areas they have been completely abandoned for their overheads, they are not going away, but also correctness can be achieved in the context of dataflow.
+
+Data systems that provide strong safety properties (eg. serializable transactions) are not guaranteed to be free from data loss or corruption. However, it would be easier to recover from such mistakes by preventing faulty code from destroying good (immutable) data. One of the most effective approaches to achieve this is to make all operations *idempotent.*
+
+Duplicate suppression can be happened TCP connection for a client’s connection to a database and it is currently executing the following transaction
+
+```sql
+# This transaction is non-idempotent
+BEGIN TRANSACTION;
+UPDATE accounts SET balance = balance + 11.00 WHERE account_id = 1234;
+UPDATE accounts SET balance = balance - 11.00 WHERE account_id = 4321;
+COMMIT;
+```
+
+In many databases, a transaction is tied to a client connection (if the client sends several queries, the database knows that they belong to the same transaction because they are sent on the same TCP connection). If the client suffers a network interruption and connection timeout after sending the COMMIT, but before hearing back from the database server, it does not know whether the transaction has been committed or aborted.
+
+Two-phase commits are not sufficient to ensure that the transaction will be executed once, so to make an operation idempotent, we need to consider *end-to-end flow* of the whole operation. For example, you could generate a unique identifier for an operation (such as a UUID) and include it as a hidden form field in the client application, or calculate a hash of all the relevant form fields to derive the operation ID. If the web browser submits the POST request twice, the two requests will have the same operation ID.
+
+```sql
+ALTER TABLE requests ADD UNIQUE (request_id); # if the request has the same request_id, the insert will fail
+
+BEGIN TRANSACTION;
+INSERT INTO requests
+	(request_id, from_account, to_account, amount)
+	VALUES('0286FDB8-D7E1-423F-B40B-792B3608036C', 4321, 1234, 11.00);
+
+UPDATE accounts SET balance = balance + 11.00 WHERE account_id = 1234;
+UPDATE accounts SET balance = balance - 11.00 WHERE account_id = 4321;
+COMMIT;
+```
