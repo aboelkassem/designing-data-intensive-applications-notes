@@ -21,7 +21,7 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 - Part III: Derived Data
 	- [Chapter 10: Batch Processing](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%2010%20-%20Batch%20Processing)
 	- [Chapter 11: Stream Processing](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%2011%20-%20Stream%20Processing#user-content-partitioned-logs-kafka)
-	- Chapter 12: The Future of Data Systems (In Progress)
+	- [Chapter 12: The Future of Data Systems](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%2012%20-%20The%20Future%20of%20Data%20Systems)
 
 # Acknowledgements
 I would like to express my appreciation to Martin Kleppmann for authoring "Designing Data-Intensive Applications" and sharing a wealth of knowledge with the community. My notes are derived from the concepts and ideas presented in his book.
