@@ -153,3 +153,71 @@ Applications that use event sourcing need to take the log of events and transfor
 The biggest downside of CDC and event sourcing is that the consumers of the event log are usually asynchronous, which might lead to failure in *reading your own writes*. One solution is perform updates on read view synchronously, but a better approach might be to implement linearizable storage using total order broadcast. However, if the event log and application state are partitioned in the same way,  then a single-threaded log consumer needs no concurrency control for  writes.
 
 The limitations of immutability is that immutable history may grow very large, causing the system to perform poorly. Also, for administrative reasons, data must be completely deleted in some cases, which is surprisingly hard.
+
+## Processing Streams
+
+what you can do with the stream once you have it— namely, you can process it. Broadly, there are three options:
+
+- Write it to a database, cache, search index, .. etc
+- Preview at an application for the user like notifications, real-time dashboard
+- Pipeline to another stream
+
+## Uses of Stream Processing
+
+- **Fraud detection** systems need to determine if the usage patterns of credit card has unexpectedly changes, and block the card if it is likely to have bean stolen.
+- **Trading systems** need to examine price changes in a financial market and execute trades according to specified rules.
+- **Manufacturing systems** need to monitor the status of machines in a factory, and quickly identify the problem if there is a malfunction.
+- **Military and intelligence systems** need to track the activities of a potential aggressor, and raise the alarm if there are signs of an attack.
+
+## Stream Operations
+
+These are the operations that can be applied to stream.
+
+### Complex Event Processing (CEP)
+
+- Allow you to specify rules to search for certain patterns of events in a stream.
+- CEP systems often use a high-level declarative query language like SQL, or a GUI, to describe the patterns of events that should/need be detected
+- When a match is found, the **engine** emits a complex event with details of the event pattern that was detected.
+
+### Stream Analytics
+
+Finding aggregations and statistical metrics over a large number of events over **window/period** of time:
+
+- Measuring the rate of some type of event (how often it occurs per time interval)
+- Calculating the rolling average of a value over some time period
+- Comparing current statistics to previous time intervals (e.g. to detect trends or alert on metrics that are unusually high or low compared to the same time last week)
+
+Many open source distributed stream processing frameworks are designed with **analytics** in mind: for example, Apache Storm, Spark Streaming, Flink, Concord, Samza, and Kafka Streams. Hosted services include Google Cloud Dataflow and Azure Stream Analytics.
+
+**Types of windows**
+
+- **Tumbling window**: Fixed length, for example, if you have a 1-minute tumbling window, all the events with timestamps between 10:03:00 and 10:03:59 are grouped into one window.
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2011%20-%20Stream%20Processing/images/tumbling-window.png" width="700" hight="500"/>
+    </p>
+    
+- **Hopping window:** also has a fixed length, but allows windows to overlap in order to provide **some smoothing**. For example, a 5-minute window with a hop size of 1 minute would contain the events between 10:03:00 and 10:07:59, then the next window would cover events between 10:04:00 and 10:08:59, and so on.
+
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2011%20-%20Stream%20Processing/images/hopping-window.png" width="700" hight="500"/>
+    </p>
+
+- **Sliding window:** Fixed length but by event occurred, make a new window
+
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2011%20-%20Stream%20Processing/images/sliding-window.png" width="700" hight="500"/>
+    </p>
+    
+- **Session window**: defined by grouping together all events for the same user that occur closely together in time, and the window ends when the user has been inactive for some time
+
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2011%20-%20Stream%20Processing/images/session-window.png" width="700" hight="500"/>
+    </p>
+    
+When to use each of window type?
+
+- **Tumbling** ⇒ Event appears at only one window.
+- **Hopping** ⇒ Scheduled based
+- **Sliding** ⇒ Event based
+- **Session** ⇒ Activity based
