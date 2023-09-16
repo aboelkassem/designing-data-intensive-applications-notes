@@ -221,3 +221,32 @@ When to use each of window type?
 - **Hopping** ⇒ Scheduled based
 - **Sliding** ⇒ Event based
 - **Session** ⇒ Activity based
+
+### Search Streams
+
+Besides CEP, which allows searching for patterns consisting of multiple events, there is also sometimes a need to search for individual events based on complex criteria, such as full-text search queries.
+
+Formulating a search query in advance, and then continually matching the stream of news items against this query.
+
+Similar to search engines first index the data and then run queries over the index. By contrast, searching a stream turns the processing on its head: **the queries** are **stored** and **indexed**, and the events run past the queries.
+
+### Join Streams
+
+Same as batch processing, stream processing needs to do joins, either by joining a stream to another stream , or a stream to a table, or two tables. The three types of joins requires the stream processor to maintain some state based on the join input, and a query that state on messages from the other join, which makes the ordering guarantees an important matter, and it is often addressed by using a unique identifier for a particular version of the joined record.
+
+In order to provide fault-tolerance to stream processing, we might want to break the stream into small blocks, and treat each block as a batch (batch size is typically around a second). Also, atomic commits might be necessary to avoid causing side effects twice, and luckily, the overhead of transaction protocols can be amortized by processing several messages within a single transaction.
+
+An alternative for transactions is *idempotence writes*, which are operations that can be performed multiple times and still has the effect as if it was performed once. Any operation can be made idempotent with some extra metadata.
+
+### Fault Tolerance
+
+The batch processing approach to fault tolerance exposes ***exactly-once** semantics*, where it appears as though every record was processed exactly once.
+
+In stream processing, waiting until a task is finished before making its output visible is not an option, because a stream is infinite.
+
+**Microbatching and checkpointing**
+
+- *Microbatching* breaks the stream into small blocks and treats each block like a miniature batch process.
+- With microbatching, small batches incur greater scheduling and coordination overhead, while larger batches mean a longer delay before results of the stream processor become available.
+- An alternative is to periodically generate rolling checkpoints of state and write them to durable storage.
+- Once the output leaves the stream processor, the framework cannot discard the output of a failed batch. Restarting a failed task causes its external side-effects to happen twice, regardless of checkpointing or microbatching.
