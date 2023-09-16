@@ -113,3 +113,83 @@ UPDATE accounts SET balance = balance + 11.00 WHERE account_id = 1234;
 UPDATE accounts SET balance = balance - 11.00 WHERE account_id = 4321;
 COMMIT;
 ```
+### Enforcing Constraints
+
+The most common way of achieving consensus is by having a single leader node, but also the unbundled database approach with log-based messaging have a similar approach to enforce uniqueness constraint.
+
+Traditionally, executing transactions across multiple partitions requires an atomic commit, but equivalent correctness can be achieved with partitioned logs as follows:
+
+- The request is given a unique ID by the client, and atomically appended to the log partitioned based on its ID
+- A stream processor reads the log for requests, and emits message(s) with the request ID to output streams
+- Further processors consumes the output streams
+
+This algorithm is basically the same as in “Implementing linearizable storage using total order broadcast”. It scales easily to a large request throughput by increasing the number of partitions, as each partition can be processed independently.
+
+### Timeliness and Integrity
+
+Timeliness means ensuring that users observe the system in an up-to-date state. Integrity means absence of corruption; i.e., no data loss, and no contradictory or false data
+
+Consistency conflates two different requirements, which are *timeliness* and *integrity*. Violation of timeliness is eventual consistency, whereas violation of integrity is *perpetual consistency* and can be catastrophic!
+
+For example, on your credit card statement, it is not surprising if a transaction that you made within the last 24 hours does not yet appear—it is normal that these systems have a certain lag. We know that banks reconcile and settle transactions asynchronously, and timeliness is not very important here. However, it would be very bad if the statement balance was not equal to the sum of the transactions plus the previous statement balance (an error in the sums), or if a transaction was charged to you but not paid to the merchant (disappearing money). Such problems would be violations of the integrity of the system.
+
+ACID transactions usually provide both timeliness (e.g., linearizability) and integrity (e.g., atomic commit) guarantees. Thus, if you approach application correctness from the point of view of ACID transactions, the distinction between timeliness and integrity is fairly inconsequential.
+
+Event-based dataflow systems decouples timeliness and integrity, there is no guarantee of timeliness, but integrity can be achieved through:
+
+- Representing the content of the atomic write operation as a single message, an approach that fits very well with event sourcing.
+- Deriving all other state updates from the single message using deterministic derivation functions
+- Passing a client-generated request ID through all these levels of processing, enabling end-to-end duplicate suppression
+- Making messages immutable
+
+Some applications **do require integrity**: you would not want to lose a reservation, or have money disappear due to mismatched credits and debits. But they **don’t require timeliness** on the enforcement of the constraint: if you have sold more items than you have in the warehouse, you can patch up the problem after the fact by apologizing.
+
+In this context, serializable transactions are still useful as part of maintaining derived state, but they can be run at a small scope where they work well. Heterogeneous distributed transactions such as XA transactions are not required. Synchronous coordination can still be introduced in places where it is needed (for example, to enforce strict constraints before an operation from which recovery is not possible), but there is no need for everything to pay the cost of coordination if only a small part of an application needs it.
+
+### Trust, but Verify
+
+It is always a good idea not to just blindly trust the guarantees given by a software, no matter how widely used it is, because bugs can always creep in. We should have a way of finding out (preferably automatically and continually) if the data has been corrupted so that we can fix it and track down the source of error. This is known as *auditing*.
+
+Event-based systems can provide better auditability than transaction-based systems, as it gives a clear picture of why the mutations were performed. Also, a deterministic and well-defined dataflow makes it easier to debug and trace the execution of the system.
+
+It would be better if we can check that the entire derived data pipeline is correct *end-to-end*, which can give us confidence about the correctness of any disks, networks, services, and algorithms along the path.
+
+Having continuous end-to-end integrity checks gives you increased confidence about the correctness of your systems, which in turn allows you to move faster. Like automated testing, auditing increases the chances that bugs will be found quickly, and thus reduces the risk that a change to the system or a new storage technology will cause damage. If you are not afraid of making changes, you can much better evolve an application to meet changing requirements.
+
+### Tools for auditable data systems
+
+It would be interesting to use cryptographic tools to prove the integrity of a system in a way that is robust to a wide range of hardware and software issues, and even potentially malicious actions. Cryptocurrencies, blockchains, and distributed ledger technologies such as Bitcoin, Ethereum, Ripple, Stellar, and various others have sprung up to explore this area.
+
+Cryptographic auditing and integrity checking often relies on Merkle trees, which are trees of hashes that can be used to efficiently prove that a record appears in some dataset (and a few other things). Outside of the hype of cryptocurrencies, certificate transparency is a security technology that relies on Merkle trees to check the validity of TLS/SSL certificates.
+
+## Doing the Right Thing
+
+Every system is built for a purpose which has both intended and unintended consequences. We are responsible to carefully consider those consequences.
+
+A technology is not good or bad in itself—what matters is how it is used and how it affects people. This is true for a software system like a search engine in much the same way as it is for a weapon like a gun. I think it is not sufficient for software engineers to focus exclusively on the technology and ignore its consequences: the ethical responsibility is ours to bear also. Reasoning about ethics is difficult, but it is too important to ignore
+
+## Predictive Analytics
+
+Predictive analytics systems which usually rely on machine learning can be very misleading. If there is a systematic bias in the input, the system will most likely learn and amplify that bias in the output.
+
+Predictive analytics systems do not merely automate a human's decision by using software to specify the rules for when to say yes or no; instead we leave the rules themselves to be inferred from the data.
+
+Consequences such as feedback loops can be predicted by thinking about the entire system, including the people interacting with it – an approach known as *systems thinking*.
+
+## **Privacy and Tracking**
+
+When a system only stores data that has been explicitly entered, then the system is performing a service for the user: The user is the  customer.
+
+Tracking the user serves not the individual but the needs of advertisers who are funding the service. This relationship is appropriately described as *surveillance*.
+
+Privacy does not mean keeping everything secret, but having the freedom to choose which things to reveal to whom, what to make public, and what to keep secret.
+
+When data is extracted from people through surveillance infrastructure, privacy rights are usually not eroded but rather transferred to the data collector.
+
+Whether something is "undesirable" or "inappropriate" is down to human judgment; algorithms are oblivious to such notions unless we explicitly program them to respect human needs.
+
+Surveillance has always existed, but it used to be expensive and manual. Trust relationships have always existed, but the are mostly governed by ethical, legal, and regulatory constraints.
+
+Just as the Industrial Revolution had a dark side that needed to be managed, our transition to the information age has major problems that we must confront and solve.
+
+As Bruce Schneier said, data is the pollution problem of the information age, and protecting privacy is the environmental challenge.
