@@ -6,7 +6,7 @@
 - [Unbundling Databases](#unbundling-databases)
   * [Designing Applications Around Dataflow](#designing-applications-around-dataflow)
   * [Observing Derived State](#observing-derived-state)
-  * [**Aiming for Correctness**](#--aiming-for-correctness--)
+  * [Aiming for Correctness](#user-content-aiming-for-correctness)
   * [Enforcing Constraints](#enforcing-constraints)
   * [Timeliness and Integrity](#timeliness-and-integrity)
   * [Trust, but Verify](#trust--but-verify)
