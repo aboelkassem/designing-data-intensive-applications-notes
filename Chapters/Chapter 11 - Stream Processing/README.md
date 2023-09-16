@@ -1,4 +1,20 @@
 # Chapter 11: Stream Processing
+## Table Of Content (TOC)
+- [Messaging System](#messaging-system)
+- [Partitioned Logs (Kafka)](#partitioned-logs--kafka-)
+- [Partitioned Log Broker vs Message Queue/Passing Broker](#partitioned-log-broker-vs-message-queue-passing-broker)
+- [Databases and Streams](#databases-and-streams)
+  * [Keeping systems in Sync](#keeping-systems-in-sync)
+  * [Change Data Capture (CDC)](#change-data-capture--cdc-)
+  * [Event Sourcing](#event-sourcing)
+- [Processing Streams](#processing-streams)
+- [Uses of Stream Processing](#uses-of-stream-processing)
+- [Stream Operations](#stream-operations)
+  * [Complex Event Processing (CEP)](#complex-event-processing--cep-)
+  * [Stream Analytics](#stream-analytics)
+  * [Search Streams](#search-streams)
+  * [Join Streams](#join-streams)
+  * [Fault Tolerance](#fault-tolerance)
 
 What is Steam?
 
