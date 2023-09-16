@@ -1,4 +1,20 @@
 # Chapter 12: The Future of Data Systems
+## Table Of Content (TOC)
+- [Data Integration](#data-integration)
+- [Combining Specialized Tools by Deriving Data](#combining-specialized-tools-by-deriving-data)
+  * [Batch and Stream Processing](#batch-and-stream-processing)
+- [Unbundling Databases](#unbundling-databases)
+  * [Designing Applications Around Dataflow](#designing-applications-around-dataflow)
+  * [Observing Derived State](#observing-derived-state)
+  * [**Aiming for Correctness**](#--aiming-for-correctness--)
+  * [Enforcing Constraints](#enforcing-constraints)
+  * [Timeliness and Integrity](#timeliness-and-integrity)
+  * [Trust, but Verify](#trust--but-verify)
+  * [Tools for auditable data systems](#tools-for-auditable-data-systems)
+- [Doing the Right Thing](#doing-the-right-thing)
+- [Predictive Analytics](#predictive-analytics)
+- [**Privacy and Tracking**](#--privacy-and-tracking--)
+
 
 ## Data Integration
 
