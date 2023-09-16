@@ -29,3 +29,37 @@ Derived views allow *gradual evolution*, which means we can maintain two (old a
 Some systems which need a quickly approximated data through stream processing, as well as correct and reliable version of the data later through batch processing, usually use **lambda architecture**, which records incoming data as immutable events to an always-growing dataset, and runs both systems in parallel, where each uses a derived view. The only down side is the operational complexity of debugging and maintaining two different systems.
 
 In the lambda approach, the stream processor consumes the events and quickly pro‐ duces an approximate update to the view; the batch processor later consumes the same set of events and produces a corrected version of the derived view.
+
+## Unbundling Databases
+
+So far there are many various features provided by databases and how they work, including:
+
+- Secondary indexes, which allow you to efficiently search for records based on the value of a field
+- Materialized views, which are a kind of precomputed cache of query results
+- Replication logs, which keep copies of the data on other nodes up to date
+- Full-text search indexes, which allow keyword search in text
+
+Database is consisted of different interacting components that we usually take for granted to work synchronously to achieve the desired storage role. This traditional synchronous actions require distributed transactions with all its overheads, so an asynchronous event-log (with Idempotence) might be a much more robust and practical approach, which leads us to the concept of *unbundling the database*.
+
+Unbundling the database means building systems that abstractly acts like a database, but it in fact consists of a loosely coupled components. This has the advantages of making the system more robust to outages or performance degradation of individual components.
+
+The goal of unbundling is to allow to combine several different databases in order to achieve good performance for much wider range of workloads that no single piece of software can satisfy them all.
+
+### Designing Applications Around Dataflow
+
+deployment and cluster management tools such as Mesos, YARN, Docker, Kubernetes, and others are designed specifically for the purpose of running application code. By focusing on doing one thing well, they are able to do it much better than a database that provides execution of user-defined functions as one of its many features.
+
+It might make sense to have some parts of a system that specialize in durable data storage, and other parts that specialize in running application code. The two can interact while still remaining independent.
+
+Most web applications today are deployed as **stateless services**, in which any user request can be routed to any application server, and the server forgets everything about the request once it has sent the response. The trend has been to keep stateless application logic separate from state management (databases): not putting application logic in the database and not putting persistent state in the application. As people in the functional programming community like to joke, “We believe in the separation of Church and state”
+
+The advantage of such a service-oriented architecture over a single monolithic application is primarily organizational scalability through loose coupling: different teams can work on different services, which reduces coordination effort between teams (as long as the services can be deployed and updated independently).
+
+The difference between dataflow systems compared to microservices is that it has a one-directional, asynchronous communication mechanism, rather than synchronous request/response interaction, so instead of RPC we have a stream join between events.
+
+dataflow systems can also achieve better performance. For example, say a customer is purchasing an item that is priced in one currency but paid for in another currency. In order to perform the currency conversion, you need to know the current exchange rate. This operation could be implemented in two ways:
+
+- ***In the microservices approach,*** the code that processes the purchase would probably query an **exchange-rate service** or database in order to obtain the current rate for a particular currency
+- .***In the dataflow approach***, the code that processes purchases would subscribe to a **stream of exchange rate updates** ahead of time, and record the current rate in a local database whenever it changes. When it comes to processing the purchase, it only needs to query the local database.
+
+Not only is the dataflow approach faster, but it is also more robust to the failure of another service. The fastest and most reliable network request is no network request at all! Instead of RPC, we now have a stream join between purchase events and exchange rate update events.
