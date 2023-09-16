@@ -92,3 +92,64 @@ Apache Kafka, Amazon Kinesis Streams, and Twitter’s DistributedLog are log-bas
 <p align="center" width="100%">
   <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2011%20-%20Stream%20Processing/images/partitioned-logs-vs-message-queue-3.png" width="700" hight="500"/>
 </p>
+
+## Databases and Streams
+
+A database can be represented as a stream, where an *event* can be something that was written to a database, it can be captured, stored, and processed. This representation opens up powerful  opportunities for integrating systems.
+
+### Keeping systems in Sync
+
+Most nontrivial applications need to **combine several different technologies** in order to satisfy their requirements: for example, using an OLTP database to serve user requests, a cache to speed up common requests, a full-text index to handle search queries, and a data warehouse for analytics. Each of these has its own copy of the data, stored in its own representation that is optimized for its own purposes.
+
+If an item is updated in the database, it also needs to be updated in the cache, search indexes, and data warehouse (By ETL process and full copy of the database). If periodic full database dumps are too slow, an alternative that is sometimes used is **dual writes**, in which the application code explicitly writes to each of the systems when data changes: for example, first writing to the database, then updating the search index, then invalidating the cache entries (or even performing those writes concurrently).
+
+The problems with dual writes:
+
+- Race condition can happened
+  
+    In the database, X is first set to A and then to B, while at the search index the writes arrive in the opposite order.
+    
+    <p align="center" width="100%">
+      <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2011%20-%20Stream%20Processing/images/derived-system-race-condition.png" width="700" hight="500"/>
+    </p>
+    
+- There is no Atomic Commit
+
+A better approach for data sync is *change data capture* (CDC).
+
+### Change Data Capture (CDC)
+
+The process of observing all data changes written to a database and extracting them in a form in which they can be replicated to other systems (eg. search index).It allows the database to act as a leader to other followers.
+
+The following diagram shows, Taking data in the order it was written to one database, and applying the changes to other systems in the same order.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%2011%20-%20Stream%20Processing/images/change-data-change-cdc.png" width="700" hight="500"/>
+</p>
+
+A log-based message broker is well suited for transporting the change events from the source database, since it preserves the ordering of messages.
+
+LinkedIn’s Databus, Facebook’s Wormhole, and Yahoo!’s Sherpa use this idea at large scale. Bottled Water implements CDC for PostgreSQL using an API that decodes the write-ahead log, Maxwell and Debezium do something similar for MySQL by parsing the binlog, Mongoriver reads the MongoDB oplog, and GoldenGate provides similar facilities for Oracle.
+
+It is usually implemented by parsing the replication log of the database, which relies on taking consistent snapshots regularly and *log compaction* to avoid running out of space. Which is periodically looks for log records with the same key, throws away any duplicates, and keeps only the most recent update for each key, an update with a special null value (a tombstone) indicates that a key was deleted. This compaction and merging process runs in the background.
+
+Now, whenever you want to rebuild a derived data system such as a search index, you can start a new consumer from offset 0 of the log-compacted topic, and sequentially scan over all messages in the log. This log compaction feature is supported by Apache Kafka.
+
+Kafka Connect is an effort to integrate change data capture tools for a wide range of database systems with Kafka. 
+
+### Event Sourcing
+
+Like CDC, event sourcing involves storing all changes to the **application state** **as a log of change events**. The big differences are:
+
+- In CDC, the application uses the **database in a mutable way**, updating and deleting records at will. The log of changes is extracted from the database at a low level (e.g., by parsing the replication log)
+- In event sourcing, the application logic is explicitly built on the basis of **immutable** events that are written to an **event log**. In this case, the event store is append-only, and updates or deletes are discouraged or prohibited
+
+Event sourcing is a powerful technique for data modeling: from an application point of view it is more meaningful to record the **user’s actions as immutable events**, rather than recording the effect of those actions on a mutable database. Event sourcing makes it easier to evolve applications over time, helps with debugging by making it easier to understand after the fact why something happened, and guards against application bugs.
+
+For example, storing the event “student cancelled their course enrollment” clearly expresses the intent of a single action in a neutral fashion, whereas the side effects “one entry was deleted from the enrollments table, and one cancellation reason was added to the student feedback table” embed a lot of assumptions about the way the data is later going to be used. If a new application feature is introduced—for example, “the place is offered to the next person on the waiting list”—the event sourcing approach allows that new side effect to easily be chained off the existing event.
+
+Applications that use event sourcing need to take the log of events and transform it into application state that is suitable for showing to a user. This transformation can use arbitrary logic, but it should be deterministic so that you can run it again and derive the same application state from the event log.
+
+The biggest downside of CDC and event sourcing is that the consumers of the event log are usually asynchronous, which might lead to failure in *reading your own writes*. One solution is perform updates on read view synchronously, but a better approach might be to implement linearizable storage using total order broadcast. However, if the event log and application state are partitioned in the same way,  then a single-threaded log consumer needs no concurrency control for  writes.
+
+The limitations of immutability is that immutable history may grow very large, causing the system to perform poorly. Also, for administrative reasons, data must be completely deleted in some cases, which is surprisingly hard.
