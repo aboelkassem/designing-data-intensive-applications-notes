@@ -20,7 +20,7 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 	- [Chapter 9: Consistency and Consensus](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%209%20-%20Consistency%20and%20Consensus)
 - Part III: Derived Data
 	- [Chapter 10: Batch Processing](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%2010%20-%20Batch%20Processing)
-	- Chapter 11: Stream Processing (In Progress)
+	- [Chapter 11: Stream Processing](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%2011%20-%20Stream%20Processing#user-content-partitioned-logs-kafka)
 	- Chapter 12: The Future of Data Systems (In Progress)
 
 # Acknowledgements
