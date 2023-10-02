@@ -125,3 +125,25 @@ Some systems are elastic, meaning that they can automatically add computing reso
 While distributing stateless services across multiple machines is fairly straightforward, taking stateful data systems from a single node to a distributed setup can introduce a lot of additional complexity. For this reason, common **wisdom until recently was to keep your database on a single node (scale up) until scaling cost or high availability requirements forced you to make it distributed.**
 
 In an early stage startup, it's more important to be able to iterate quickly on product features than to scale to some hypothetical future load.
+
+## Maintainability
+
+***Different people who works on the system should all be able to work on it productively***
+
+To minimize pain during maintenance, there are some design principles take into your consideration.
+
+- **Operability**: Make it easy for operations teams to keep the system running smoothly.
+    - Good monitoring
+    - Providing good support for automation and integration with standard tools
+    - Avoiding dependency on individual machines
+    - Good documentation
+    - Keeping software and platforms up to date, including security patches
+    - Providing good default behavior, while giving administrators the option to override
+    - Self-healing, while giving administrators a manual control
+- **Simplicity**: Make it easy for new engineers to understand the system, by removing as much complexity as possible from the system.
+    - A good system should be simple, this can be done by reducing complexity, which doesn't necessarily mean reducing its functionality, but rather by making **abstractions**.
+    - good abstraction can hide a great deal of implementation detail behind a clean, simple-to-understand façade.
+    - A good abstraction can also be used for a wide range of different applications.
+- **Evolvability**: Make it easy for engineers to make changes to the system in the future, adapting it for unanticipated use cases as requirements change
+    - Agile is one of the best working patterns for maintaining evolvable systems.
+    - Test-driven development (TDD) and refactoring also used for evolvability
