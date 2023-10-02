@@ -6,7 +6,7 @@
   * [Software Errors](#software-errors)
   * [Human Errors](#human-errors)
 - [Scalability](#scalability)
-  * [Describing Load (Twitter example)](#describing-load--twitter-example-)
+  * [Describing Load (Twitter example)](#user-content-describing-load-twitter-example)
   * [Describing Performance](#describing-performance)
   * [Approaches for Coping with Load](#approaches-for-coping-with-load)
 - [Maintainability](#maintainability)
