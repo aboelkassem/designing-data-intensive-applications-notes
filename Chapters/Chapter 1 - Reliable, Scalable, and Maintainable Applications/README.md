@@ -1,4 +1,16 @@
 # Chapter 1: Reliable, Scalable, and Maintainable Applications
+## Table Of Content (TOC)
+- [Thinking About Data Systems](#thinking-about-data-systems)
+- [Reliability](#reliability)
+  * [Hardware Faults](#hardware-faults)
+  * [Software Errors](#software-errors)
+  * [Human Errors](#human-errors)
+- [Scalability](#scalability)
+  * [Describing Load (Twitter example)](#describing-load--twitter-example-)
+  * [Describing Performance](#describing-performance)
+  * [Approaches for Coping with Load](#approaches-for-coping-with-load)
+- [Maintainability](#maintainability)
+
 CPU power is rarely the limiting factor anymore, it is the data size that is.
 
 A data-intensive application is typically built from standard building blocks that provide commonly needed functionality. For example, many applications need to:
