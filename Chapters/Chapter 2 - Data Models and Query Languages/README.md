@@ -227,3 +227,155 @@ db.observations.aggregate([
 	}}
 ]);
 ```
+## Graph-Like Data Models
+
+Graph data model is usually the most suitable model for data with a lot of **many-to-many** relationships. A graph consists of two kinds of objects: vertices (also known as nodes or entities) and edges (also known as relationships or arcs).
+
+Example of Graph data:
+
+- Social graphs: Vertices are people, and edges indicate which people know each other.
+- The web graph: Vertices are web pages, and edges indicate HTML links to other pages.
+- Road or rail networks: Vertices are junctions, and edges represent the roads between them.
+
+There are many well-known algorithms which can operate on graphs (like shortest path between two points or PageRank in web graph to determine popularity of web page in search results).
+
+Facebook maintains a single graph with many different types of vertices and edges: vertices represent people, locations, events, checkins, and comments made by users; edges indicate which people are friends with each other, which checkin happened in which location, who commented on which post, who attended which event, and so on.
+
+<p align="center" width="100%">
+  <img src="https://github.com/aboelkassem/designing-data-intensive-applications-notes/blob/main/Chapters/Chapter%202%20-%20Data%20Models%20and%20Query%20Languages/images/graph-example.png" width="700" hight="500"/>
+</p>
+
+There are two kinds of graph models:  ***property graph*** model (implemented by **Neo4j**, Titan, and InfiniteGraph), and the ***triple-store*** model (implemented by Datomic, AllegroGraph, and others). Also there some good *declarative* query languages such as Cypher for efficient querying or SPARQL or Datalog.
+
+### Property Graphs
+
+each vertex consists of:
+
+- A unique identifier
+- A set of outgoing edges
+- A set of incoming edges
+- A collection of properties (key-value pairs)
+
+Each edge consists of:
+
+- A unique identifier
+- The tail vertex
+- The head vertex
+- A label to describe the kind of relationship between the two vertices
+- A collection of properties (key-value pairs)
+
+```sql
+CREATE TABLE vertices (
+	vertex_id integer PRIMARY KEY,
+	properties json
+);
+CREATE TABLE edges (
+	edge_id integer PRIMARY KEY,
+	tail_vertex integer REFERENCES vertices (vertex_id),
+	head_vertex integer REFERENCES vertices (vertex_id),
+	label text,
+	properties json
+);
+CREATE INDEX edges_tails ON edges (tail_vertex);
+CREATE INDEX edges_heads ON edges (head_vertex);
+```
+
+### The Cypher Query Language
+
+Cypher is a declarative query language for property graphs, created for the Neo4j graph database.
+
+Subset of the data of above image represented as a cypher query 
+
+```sql
+CREATE
+	(NAmerica:Location {name:'North America', type:'continent'}),
+	(USA:Location {name:'United States', type:'country' }),
+	(Idaho:Location {name:'Idaho', type:'state' }),
+	(Lucy:Person {name:'Lucy' }),
+	(Idaho) -[:WITHIN]-> (USA) -[:WITHIN]-> (NAmerica),
+	(Lucy) -[:BORN_IN]-> (Idaho)
+```
+
+Each vertex is given a symbolic name like USA or Idaho, and other parts of the query can use those names to create edges between the vertices, using an arrow notation: (Idaho) -[:WITHIN]-> (USA) creates an edge labeled WITHIN, with Idaho as the tail node and USA as the head node.
+
+Cypher query to find people who emigrated from the US to Europe
+
+```sql
+MATCH
+	(person) -[:BORN_IN]-> () -[:WITHIN*0..]-> (us:Location {name:'United States'}),
+	(person) -[:LIVES_IN]-> () -[:WITHIN*0..]-> (eu:Location {name:'Europe'})
+RETURN person.name
+```
+
+Find any vertex (call it person) that meets both of the following conditions:
+
+1. person has an outgoing BORN_IN edge to some vertex. From that vertex, you can follow a chain of outgoing WITHIN edges until eventually you reach a vertex of type Location, whose name property is equal to "United States".
+
+2. That same person vertex also has an outgoing LIVES_IN edge. Following that edge, and then a chain of outgoing WITHIN edges, you eventually reach a vertex of type Location, whose name property is equal to "Europe"
+
+The same query as above, expressed in SQL using recursive common table expressions.
+
+```sql
+WITH RECURSIVE
+
+-- in_usa is the set of vertex IDs of all locations within the United States
+in_usa(vertex_id) AS (
+	SELECT vertex_id FROM vertices WHERE properties->>'name' = 'United States'
+	UNION
+	SELECT edges.tail_vertex FROM edges
+	JOIN in_usa ON edges.head_vertex = in_usa.vertex_id
+	WHERE edges.label = 'within'
+),
+-- in_europe is the set of vertex IDs of all locations within Europe
+in_europe(vertex_id) AS (
+	SELECT vertex_id FROM vertices WHERE properties->>'name' = 'Europe'
+	UNION
+	SELECT edges.tail_vertex FROM edges
+	JOIN in_europe ON edges.head_vertex = in_europe.vertex_id
+	WHERE edges.label = 'within'
+),
+-- born_in_usa is the set of vertex IDs of all people born in the US
+born_in_usa(vertex_id) AS (
+	SELECT edges.tail_vertex FROM edges
+	JOIN in_usa ON edges.head_vertex = in_usa.vertex_id
+	WHERE edges.label = 'born_in'
+),
+-- lives_in_europe is the set of vertex IDs of all people living in Europe
+lives_in_europe(vertex_id) AS (
+	SELECT edges.tail_vertex FROM edges
+	JOIN in_europe ON edges.head_vertex = in_europe.vertex_id
+	WHERE edges.label = 'lives_in'
+)
+SELECT vertices.properties->>'name'
+FROM vertices
+
+-- join to find those people who were both born in the US *and* live in Europe
+JOIN born_in_usa ON vertices.vertex_id = born_in_usa.vertex_id
+JOIN lives_in_europe ON vertices.vertex_id = lives_in_europe.vertex_id;
+```
+
+### Triple-Stores and SPARQL
+
+Triple-store model is mostly equivalent to the property graph model, using different words to describe the same ideas.  In a triple-store, all information is stored in the form of very simple three-part statements: (subject, predicate, object). For example, in the triple (Jim, likes, bananas), Jim is the subject, likes is the predicate (verb), and bananas is the object.
+
+The following example shows the same data as in above example, written as triples in a format called Turtle, a subset of Notation3.
+
+```sql
+@prefix : <urn:example:>.
+_:lucy a :Person.
+_:lucy :name "Lucy".
+_:lucy :bornIn _:idaho.
+_:idaho a :Location.
+_:idaho :name "Idaho".
+_:idaho :type "state".
+_:idaho :within _:usa.
+_:usa a :Location.
+_:usa :name "United States".
+_:usa :type "country".
+_:usa :within _:namerica.
+_:namerica a :Location.
+_:namerica :name "North America".
+_:namerica :type "continent".
+```
+
+The SPARQL query language for triple-stores.
