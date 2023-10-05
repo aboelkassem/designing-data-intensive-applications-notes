@@ -1,4 +1,14 @@
 # Chapter 2: Data Models and Query Languages
+## Table of Content (TOC)
+- [Relational Model vs Document Model](#relational-model-vs-document-model)
+  * [Many-to-One and Many-to-Many Relationships](#many-to-one-and-many-to-many-relationships)
+- [Query Languages for Data](#query-languages-for-data)
+  * [MapReduce Querying](#mapreduce-querying)
+- [Graph-Like Data Models](#graph-like-data-models)
+  * [Property Graphs](#property-graphs)
+  * [The Cypher Query Language](#the-cypher-query-language)
+  * [Triple-Stores and SPARQL](#triple-stores-and-sparql)
+
 Data models are perhaps the most important part of developing software, because they have such a profound effect on the way we think about the problems we're solving.
 
 ## Relational Model vs Document Model
