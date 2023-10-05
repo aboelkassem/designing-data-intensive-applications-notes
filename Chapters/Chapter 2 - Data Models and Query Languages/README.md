@@ -102,3 +102,128 @@ Google’s Spanner database offers the same locality properties in a relational 
 It seems that relational and document databases are becoming more similar overtime. PostgreSQL and MySQL become support JSON documents.  RethinkDB supports relational-like joins, and some MongoDB drivers automatically resolve database references (effectively performing a client-side join, although this is likely to be slower than a join performed in the database).
 
 A hybrid of relational and document models might be the future of databases, as they are becoming more similar over time. If a database is able to handle document-like data and also perform relational queries on it, applications can use the combination of features that best fits their needs.
+## Query Languages for Data
+
+SQL is a declarative query language which is attractive because it is typically more concise and easier to work with than an imperative API. it also hides implementation details of the database engine, which makes it possible for the database system to introduce performance improvements and optimizations. Like
+
+```sql
+SELECT * FROM animals WHERE family = 'Sharks';
+```
+
+Also, declarative code is easier to parallelize across multiple machines.
+
+**An example for declarative and imperative on web.**
+
+The following HTML and CSS code to highlight the sharks as selected in the html structure
+
+```html
+<ul>
+	<li class="selected">
+		<p>Sharks</p>
+		<ul>
+			<li>Great White Shark</li>
+			<li>Tiger Shark</li>
+			<li>Hammerhead Shark</li>
+		</ul>
+	</li>
+	<li>
+		<p>Whales</p>
+		<ul>
+			<li>Blue Whale</li>
+			<li>Humpback Whale</li>
+			<li>Fin Whale</li>
+		</ul>
+	</li>
+</ul>
+
+// CSS
+li.selected > p {
+	background-color: blue;
+}
+```
+
+If you want to use imperative approach, in javascript using the core Document Object Model (DOM) API.
+
+```html
+var liElements = document.getElementsByTagName("li");
+for (var i = 0; i < liElements.length; i++) {
+	if (liElements[i].className === "selected") {
+		var children = liElements[i].childNodes;
+		for (var j = 0; j < children.length; j++) {
+			var child = children[j];
+			if (child.nodeType === Node.ELEMENT_NODE && child.tagName === "P") {
+				child.setAttribute("style", "background-color: blue");
+			}
+		}
+	}
+}
+```
+
+Not only is it much longer and harder to understand than the CSS equivalents. Similarly, in databases, declarative query languages like SQL turned out to be much better than imperative query APIs.
+
+### MapReduce Querying
+
+MapReduce is a programming model for processing large amounts of data in bulk across many machines, popularized by Google. A limited form of MapReduce is supported by some NoSQL datastores, including MongoDB and CouchDB, as a mechanism for performing read-only queries across many documents. MapReduce is neither a declarative query language nor a fully imperative query API, but somewhere in between.
+
+Example of the same query in PostgreSQL and MongoDB for a marine and you add an observation record every time you see animals in the ocean, and want to generate a report with how many sharks per months.
+
+In PostgreSQL
+
+```sql
+SELECT date_trunc('month', observation_timestamp) AS observation_month,
+	sum(num_animals) AS total_animals
+FROM observations
+WHERE family = 'Sharks'
+GROUP BY observation_month;
+```
+
+In MongoDB
+
+```jsx
+// if the collections are
+
+{
+	observationTimestamp: Date.parse("Mon, 25 Dec 1995 12:34:56 GMT"),
+	family: "Sharks",
+	species: "Carcharodon carcharias",
+	numAnimals: 3
+},
+{
+	observationTimestamp: Date.parse("Tue, 12 Dec 1995 16:17:18 GMT"),
+	family: "Sharks",
+	species: "Carcharias taurus",
+	numAnimals: 4
+}
+
+db.observations.mapReduce(
+  function map() { // called every document that matchs the query
+		var year = this.observationTimestamp.getFullYear();
+		var month = this.observationTimestamp.getMonth() + 1;
+		emit(year + "-" + month, this.numAnimals); // emits a key and value like ("2013-12", list<animals>)
+	},
+	function reduce(key, values) { // grouped by key like => "1995-12", [3, 4]
+			return Array.sum(values); // add up the number of observations
+	},
+	{
+		query: { family: "Sharks" }, // filter by only sharks 
+		out: "monthlySharkReport" // write the output to monthlySharkReport collection
+	}
+);
+```
+
+MapReduce is a fairly low-level programming model for distributed execution on a cluster of machines. Higher-level query languages like SQL can be implemented as a pipeline of MapReduce operations.
+
+MongoDB 2.2 added support for a declarative query language called the aggregation pipeline. The aggregation pipeline language is similar in expressiveness to a subset of SQL.
+
+```jsx
+db.observations.aggregate([
+	{ $match: { family: "Sharks" } },
+	{ $group: {
+		_id: {
+			year: { $year: "$observationTimestamp" },
+			month: { $month: "$observationTimestamp" }
+		},
+		totalAnimals: { $sum: "$numAnimals" }
+	}}
+]);
+```
