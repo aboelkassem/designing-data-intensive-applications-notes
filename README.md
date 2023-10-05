@@ -9,7 +9,7 @@ The book is available [here](https://www.oreilly.com/library/view/designing-data
 ## Summaries
 - Part I: Foundation of Data Systems
 	- [Chapter 1: Reliable, Scalable, and Maintainable Applications](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%201%20-%20Reliable%2C%20Scalable%2C%20and%20Maintainable%20Applications)
-	- Chapter 2: Data Models and Query Languages (In Progress)
+	- [Chapter 2: Data Models and Query Languages](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%202%20-%20Data%20Models%20and%20Query%20Languages)
 	- [Chapter 3: Storage and Retrieval](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%203%20-%20Storage%20and%20Retrieval)
 	- [Chapter 4: Encoding and Evolution](https://github.com/aboelkassem/designing-data-intensive-applications-notes/tree/main/Chapters/Chapter%204%20-%20Encoding%20and%20Evolution)
 - Part II: Distributed Data 
