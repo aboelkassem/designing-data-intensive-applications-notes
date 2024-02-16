@@ -5,7 +5,7 @@
     + [The issues of this index and how to solve them](#the-issues-of-this-index-and-how-to-solve-them)
     + [The Props of Log structured hash index](#the-props-of-log-structured-hash-index)
     + [The limitations of Log structured hash index](#the-limitations-of-log-structured-hash-index)
-  * [SSTable (Stored String Tables)](#sstable--stored-string-tables-)
+  * [SSTable (Sorted String Tables)](#sstable--sorted-string-tables-)
   * [B-Tree](#b-tree)
     + [B-Tree Reliability](#b-tree-reliability)
   * [B-Tree vs SSTable](#b-tree-vs-sstable)
@@ -74,7 +74,7 @@ While it is going on, we continue read and write using the old segment files unt
 - The hash table must fit in memory (for fast read/writes), so you have a space issue
 - Range queries are not efficient
 
-## SSTable (Stored String Tables)
+## SSTable (Sorted String Tables)
 To Fix the memory space issue, we will use this SSTable
 
 This work by sorting the keys, which will make the keys unique after merge process
